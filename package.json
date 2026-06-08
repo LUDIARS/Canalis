@@ -1,0 +1,44 @@
+{
+  "name": "@ludiars/canalis",
+  "version": "0.1.0",
+  "description": "LUDIARS 共有データ取込パイプライン基盤 — crawl/scrape → clean/categorize → save/import の3ステージを契約で接続する。",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "canalis": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "default": "./dist/core/index.js"
+    },
+    "./notion": {
+      "types": "./dist/crawl/notion/index.d.ts",
+      "default": "./dist/crawl/notion/index.js"
+    },
+    "./save": {
+      "types": "./dist/save/index.d.ts",
+      "default": "./dist/save/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "cli": "tsx src/cli.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

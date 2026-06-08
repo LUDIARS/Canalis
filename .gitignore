@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.log
+.env
+.env.*
+# raw dump 既定置き場 (rawSave の出力先)
+data/

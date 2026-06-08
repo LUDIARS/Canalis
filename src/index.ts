@@ -1,0 +1,20 @@
+// Canalis — LUDIARS 共有データ取込パイプライン基盤。
+// crawl/scrape (①) → clean/categorize (②) → save/import (③) を契約で接続する。
+//
+// 公開面:
+//   - core   : 契約 (RawRecord / エンベロープ / Source・Transform・Sink / Manifest)
+//   - notion : ①Crawl adapter (Tirocinium から移植)
+//   - save   : ③Save writer (raw / postgres / kuzu)
+//   - runner : manifest 実行オーケストレータ
+//
+// ②Transform は各サービスリポに置く (共有 lib は 1 サービス専用ロジックを持たない)。
+
+export * from './core/index.js';
+export * from './crawl/notion/index.js';
+export * from './save/index.js';
+export {
+  runPipeline,
+  type PipelineDeps,
+  type RunReport,
+  type StageError,
+} from './runner/runner.js';
