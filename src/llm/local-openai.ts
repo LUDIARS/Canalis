@@ -50,7 +50,12 @@ type OpenAiChatResponse = {
   usage?: { prompt_tokens?: number; completion_tokens?: number };
 };
 
-const DEFAULT_MAX_TOKENS = 1024;
+// ローカルは課金が無いので余裕を持たせる。 特に Gemma 4 等の **reasoning モデル**は
+// 思考 (応答の message.reasoning) でトークンを消費するため、 max_tokens が小さいと最終回答
+// (message.content) が空になり throw する (実機: 128 だと空 / 512 で回答)。 既定を広く取り
+// 空応答を防ぐ。 reasoning を持たないモデルは end_turn で早く止まるので無害。 ②側で req.maxTokens
+// を渡せばそちらが優先。 Di の LocalOpenAiClient と同じ既定。
+const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_TIMEOUT_MS = 120_000;
 
 /**
