@@ -24,6 +24,10 @@
     "./save": {
       "types": "./dist/save/index.d.ts",
       "default": "./dist/save/index.js"
+    },
+    "./llm": {
+      "types": "./dist/llm/index.d.ts",
+      "default": "./dist/llm/index.js"
     }
   },
   "files": [
