@@ -7,6 +7,12 @@ export type {
   GraphNode,
   GraphEdge,
   KgBatch,
+  FtTask,
+  FtClassificationExample,
+  FtChatExample,
+  FtPromptExample,
+  FtExample,
+  FtBatch,
   SinkBatch,
   SinkKind,
 } from './envelope.js';
