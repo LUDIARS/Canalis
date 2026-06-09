@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "description": "LUDIARS 共有データ取込パイプライン基盤 — crawl/scrape → clean/categorize → save/import の3ステージを契約で接続する。",
   "type": "module",
+  "repository": { "type": "git", "url": "git+https://github.com/LUDIARS/Canalis.git" },
+  "publishConfig": { "registry": "https://npm.pkg.github.com" },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
