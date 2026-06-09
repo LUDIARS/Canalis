@@ -81,10 +81,12 @@ type RawRecord = {
 ```ts
 type RdbBatch = { kind: 'rdb'; upserts: { table; rows; conflictKey }[] };
 type KgBatch  = { kind: 'kg'; nodes: GraphNode[]; edges: GraphEdge[] };
-type SinkBatch = RdbBatch | KgBatch;
+type FtBatch  = { kind: 'ft'; task: 'classification'|'causal-lm'; examples: FtExample[]; model?; dataset? };
+type SinkBatch = RdbBatch | KgBatch | FtBatch;
 ```
 
 raw は別系統で、raw sink は `RawRecord[]` を直接受ける (`accepts: 'raw'`)。
+`FtBatch` は「学習的インポート」用 (§7)。
 
 ---
 
@@ -136,7 +138,8 @@ src/
   core/      契約: raw-record / envelope / pipeline(Source,Transform,Sink) / manifest
   crawl/
     notion/  ①adapter (Tr packages/notion 移植 + source.ts で RawRecord 化)
-  save/      ③writer: raw-writer(jsonl) / postgres-writer / kuzu-writer
+  save/      ③writer: raw-writer(jsonl) / postgres-writer / kuzu-writer / ft-writer
+  runners/ft/  FT runner 契約 + 参照 Python (core 外、 tsc 対象外)
   runner/    manifest 実行オーケストレータ
   cli.ts     ①+raw だけの standalone (notion-crawl)。Tr scripts/notion-crawl 置換
 test/        fake で ①→② 契約を固定
@@ -147,6 +150,27 @@ test/        fake で ①→② 契約を固定
 
 ---
 
+## FT — 学習的インポート (汎用、A/B 両対応)
+
+収集・整形したデータを **ローカル LLM へ学習として取り込む**経路。③Save の sink の一種
+(`FtSink`, `accepts: 'ft'`) として実装する。**core は学習を持たない** (§0.1)：`FtSink` は
+データセットを materialize し、 core 外の **runner** を起動するだけ。
+
+```
+② ラベル付きデータ ──FtBatch──▶ ③ FtSink
+   (task: classification | causal-lm)   ├─ <dir>/<dataset>/<stamp>/data.jsonl  (1行1例)
+                                         ├─ 同/job.json  (task/model/count/path…)
+                                         └─ runner(job) を起動 (任意)  → core 外で fine-tune
+```
+
+- **A=分類器** (`task:'classification'`, 例 `{input,label}`): 0+1 カスケードのラベルを教師に
+  ローカル小型分類器を FT → 使うほど LLM 需要↓ の自己改善ループ。
+- **B=生成LLM** (`task:'causal-lm'`, 例 `{messages}` / `{prompt,completion}`): ドメイン知識を
+  LoRA でローカル LLM に注入。
+- runner は注入 (`FtRunner`)。`commandRunner(cmd,args)` が `<cmd> --job <job.json>` で外部
+  プロセス起動 (shell 非経由・exit 購読)。契約と参照実装は `runners/ft/`。
+- core は `kuzu`/`postgres` 同様、**学習ランタイム (Python/PEFT 等) に直接依存しない**。
+
 ## 6. 未了 (scaffold 時点)
 
 - ① adapter: youtube / reddit / website (Di 用)。Lector を parse に組み込む口。
@@ -155,4 +179,6 @@ test/        fake で ①→② 契約を固定
   決定論実装を主、LLM opt-in を従で。
 - manifest ローダ (YAML/JSON) と CLI の full-pipeline 実行 (現 CLI は crawl+raw のみ)。
 - 実スキーマ突合: Di の Kuzu / Tr の companies・推薦 graph 定義とエンベロープの最終整合。
-- PROJECT-CODES への 2 文字コード登録。
+- FT runner の実体実装 (`runners/ft/train.py` は雛形)。classification=transformers+peft /
+  causal-lm=unsloth 等。GPU/依存は環境次第。FtSink(TS) 側は実装済 + テスト済。
+- ✅ PROJECT-CODES への 2 文字コード登録 = `Ci` (LUDIARS PR #29)。
