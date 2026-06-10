@@ -6,6 +6,7 @@
 //   - notion : ①Crawl adapter (Tirocinium から移植)
 //   - save   : ③Save writer (raw / postgres / kuzu)
 //   - runner : manifest 実行オーケストレータ
+//   - config : リポ内 config.json による設定 (notion.token は暗号化)
 //
 // ②Transform は各サービスリポに置く (共有 lib は 1 サービス専用ロジックを持たない)。
 
@@ -18,3 +19,11 @@ export {
   type RunReport,
   type StageError,
 } from './runner/runner.js';
+export {
+  configPath,
+  resolveNotionToken,
+  applyNotionConfigToEnv,
+  getConfigStatus,
+  type CanalisConfig,
+  type ConfigStatus,
+} from './config/index.js';

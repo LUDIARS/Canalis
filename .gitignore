@@ -3,6 +3,8 @@ dist/
 *.log
 .env
 .env.*
+# 設定ファイル (notion.token を暗号化保持)。 コミットしない。
+config.json
 # raw dump 既定置き場 (rawSave の出力先)
 data/
 # FT runner (Python) のキャッシュ

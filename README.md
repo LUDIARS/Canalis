@@ -23,9 +23,27 @@ npm install
 npm run build
 npm test          # fake で ①→② 契約を検証
 
+# Notion token を暗号化して config.json に保存 (env を使わない設定 UI)
+npm run cli -- config set notion.token            # 対話入力 (echo 非表示)
+#   または: echo "$NOTION_TOKEN" | npm run cli -- config set notion.token
+npm run cli -- config show                        # token はマスク表示
+
 # ① crawl + raw 保存だけの standalone (Tr scripts/notion-crawl 置換)
-NOTION_TOKEN=secret_xxx npm run cli -- notion-crawl <databaseId> --out data/raw
+npm run cli -- notion-crawl <databaseId> --out data/raw
 ```
+
+トークンは `config.json` (リポ直下・gitignore) に **salt 付き AES-256-GCM** で暗号化保存される
+(Excubitor と同方式)。master 鍵は env `CANALIS_MASTER_KEY` → 無ければマシン束縛値 (hostname+user)。
+非シークレット (`notion.version` / `notion.minIntervalMs`) は平文。env `NOTION_TOKEN` があればそちらを優先。
+
+| `config` サブコマンド | 用途 |
+|---|---|
+| `config set notion.token [value]` | token を暗号化保存 (value 省略で非表示入力 / パイプ可) |
+| `config set notion.version <v>` | Notion-Version (平文) |
+| `config set notion.minIntervalMs <ms>` | レート間隔 ms (平文) |
+| `config unset notion.token` | token 削除 |
+| `config show` | 設定一覧 (token マスク) |
+| `config path` | config.json のパス |
 
 プログラムからフルパイプライン:
 
