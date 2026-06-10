@@ -5,3 +5,5 @@ dist/
 .env.*
 # raw dump 既定置き場 (rawSave の出力先)
 data/
+# FT runner (Python) のキャッシュ
+__pycache__/
