@@ -1,0 +1,14 @@
+# Canalis FT runner (Gemma / Unsloth QLoRA) 依存。
+# 実行環境: WSL2 / Linux + CUDA 前提。Windows native では bitsandbytes/unsloth が基本動かない。
+#
+# unsloth は CUDA/torch バージョンに合わせた extra 付き install を推奨:
+#   pip install "unsloth[cu121-torch240] @ git+https://github.com/unslothai/unsloth.git"
+# 下記は最低限の直接依存 (unsloth が torch/transformers 等を引き込む)。固定したい場合は各環境で pin する。
+unsloth
+trl>=0.9
+peft>=0.11
+transformers>=4.44
+datasets>=2.20
+accelerate>=0.33
+bitsandbytes>=0.43
+torch>=2.4

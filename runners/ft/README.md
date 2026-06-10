@@ -43,4 +43,37 @@
    登録もここで行う。
 4. 成功で exit 0、失敗で非0。
 
-参照実装は [`train.py`](./train.py)（スケルトン）。GPU/依存は環境次第なので、各環境で適宜。
+## 参照実装 — Gemma (Unsloth QLoRA)
+
+`task=causal-lm` の実体実装を同梱（**Gemma 決めうち**）。
+
+- [`train.py`](./train.py) — Unsloth + 4bit QLoRA で Gemma を SFT し、LoRA adapter を
+  `<stamp>/output/` へ保存する。ハイパラ等の重い依存は遅延 import。
+- [`dataset.py`](./dataset.py) — ML 依存ゼロの純 stdlib 層（job/jsonl 読込 + messages 正規化）。
+  GPU 無し環境でもこの層だけでデータ契約を検証できる。
+- [`requirements.txt`](./requirements.txt) — 依存。**WSL2 / Linux + CUDA 前提**
+  （bitsandbytes/unsloth は Windows native では基本動かない）。
+
+```bash
+pip install -r requirements.txt        # unsloth は extra 付き install 推奨 (requirements.txt 参照)
+python train.py --job <job.json>            # 学習を実行 (GPU 必須)
+python train.py --job <job.json> --dry-run  # データ契約のみ検証 (ML 依存不要)
+```
+
+`--dry-run` は job.json + data.jsonl を読んで messages へ正規化できるかだけを確認する
+（モデルを一切ロードしない）。FtSink の出力疎通を CI / 非 GPU 環境で確かめるのに使う。
+
+### job.model で渡せる設定（すべて任意・既定は `train.py` の `GEMMA_DEFAULTS`）
+
+`base`（既定 `unsloth/gemma-2-2b-it`・Gemma 系サイズ差し替え用）, `max_seq_length`,
+`load_in_4bit`, `lora_r`, `lora_alpha`, `lora_dropout`, `target_modules`,
+`epochs`, `max_steps`（>0 で epochs より優先）, `learning_rate`, `batch_size`,
+`grad_accum`, `warmup_steps`, `weight_decay`, `seed`, `chat_template`（既定 `gemma-2`）。
+
+> 中間データ（dataset/job）は Canalis 側に残るので、別 base や別ハイパラでの再学習は
+> 同じ data.jsonl を `model` 差し替えで再 import すればよい（再クロール不要）。
+
+### スコープ外（本 runner では未対応）
+
+- `task=classification`（分類器 FT）は別 runner（transformers+peft）。本 runner は exit 非0。
+- adapter の merge / GGUF 変換 / Ollama 登録は別タスク（adapter 出力までで止める）。
