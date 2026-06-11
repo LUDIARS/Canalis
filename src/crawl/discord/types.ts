@@ -40,10 +40,68 @@ export type DiscordMessage = {
   referenced_message?: DiscordMessage | null;
 };
 
+/** Source<DiscordGuildSourceConfig> に渡す設定。 */
+export type DiscordGuildSourceConfig = {
+  /** クロール対象のギルド (サーバー) ID。 */
+  guildId: string;
+  /** Bot token。 省略時は env DISCORD_BOT_TOKEN。 */
+  token?: string;
+  /**
+   * 取得対象のチャンネルタイプ。
+   * 0=GUILD_TEXT / 5=GUILD_ANNOUNCEMENT / 15=GUILD_FORUM。
+   * デフォルト [0, 5, 15]。
+   */
+  channelTypes?: number[];
+  /** 除外するチャンネル ID リスト。 */
+  excludeChannelIds?: string[];
+  /** チャンネル/スレッドごとに適用するクロールオプション。 */
+  options?: DiscordCrawlOptions;
+};
+
+/** Discord Channel オブジェクトの使用フィールド。 */
+export type DiscordChannel = {
+  id: string;
+  type: number;
+  name: string;
+  guild_id?: string;
+};
+
+/** Discord Thread (フォーラム投稿 / スレッド) の使用フィールド。 */
+export type DiscordThread = {
+  id: string;
+  /** 11=PUBLIC_THREAD / 12=PRIVATE_THREAD */
+  type: number;
+  /** フォーラム投稿名またはスレッド名。 */
+  name: string;
+  /** 親チャンネル (フォーラムチャンネル) の ID。 */
+  parent_id: string;
+  guild_id?: string;
+  thread_metadata?: {
+    archived: boolean;
+    archive_timestamp: string;
+  };
+};
+
+/** ギルドクロールの 1 チャンネル/スレッド単位の中間結果。 */
+export type ChannelCrawlRecord = {
+  /** チャンネルまたはスレッドの ID (RawRecord.sourceId に使用)。 */
+  id: string;
+  /** チャンネル名またはフォーラム投稿名 (RawRecord.title に使用)。 */
+  name: string;
+  /** 'text-channel' | 'announcement' | 'forum-thread' */
+  kind: string;
+  /** フォーラムスレッドの場合、親フォーラムチャンネル名。 */
+  forumChannelName?: string;
+  messages: DiscordMessage[];
+};
+
 /** Discord API の抽象 (テスト時に差し替え可能)。 */
 export interface DiscordApi {
   getMessages(
     channelId: string,
     opts: { limit: number; before?: string; after?: string },
   ): Promise<DiscordMessage[]>;
+  getGuildChannels(guildId: string): Promise<DiscordChannel[]>;
+  getActiveThreads(guildId: string): Promise<DiscordThread[]>;
+  getArchivedThreads(channelId: string, before?: string): Promise<{ threads: DiscordThread[]; has_more: boolean }>;
 }
