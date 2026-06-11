@@ -18,3 +18,4 @@ export type {
 } from './envelope.js';
 export type { Source, Transform, Sink } from './pipeline.js';
 export type { Manifest, SourceSpec, SinkSpec } from './manifest.js';
+export { loadManifest } from './manifest-loader.js';
