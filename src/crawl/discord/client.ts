@@ -1,7 +1,7 @@
 // Discord REST API v10 クライアント。
 // raw fetch のみ使用 (外部 SDK 依存なし)。
 
-import type { DiscordApi, DiscordMessage } from './types.js';
+import type { DiscordApi, DiscordChannel, DiscordMessage, DiscordThread } from './types.js';
 
 const BASE_URL = 'https://discord.com/api/v10';
 
@@ -11,6 +11,26 @@ export type DiscordClientOptions = {
 
 export class DiscordApiClient implements DiscordApi {
   constructor(private readonly opts: DiscordClientOptions) {}
+
+  async getGuildChannels(guildId: string): Promise<DiscordChannel[]> {
+    return this.request<DiscordChannel[]>(`${BASE_URL}/guilds/${guildId}/channels`);
+  }
+
+  async getActiveThreads(guildId: string): Promise<DiscordThread[]> {
+    const res = await this.request<{ threads: DiscordThread[] }>(`${BASE_URL}/guilds/${guildId}/threads/active`);
+    return res.threads;
+  }
+
+  async getArchivedThreads(
+    channelId: string,
+    before?: string,
+  ): Promise<{ threads: DiscordThread[]; has_more: boolean }> {
+    const query = new URLSearchParams({ limit: '100' });
+    if (before) query.set('before', before);
+    return this.request<{ threads: DiscordThread[]; has_more: boolean }>(
+      `${BASE_URL}/channels/${channelId}/threads/archived/public?${query}`,
+    );
+  }
 
   async getMessages(
     channelId: string,
