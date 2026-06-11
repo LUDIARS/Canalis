@@ -47,6 +47,10 @@
     "./website": {
       "types": "./dist/crawl/website/index.d.ts",
       "default": "./dist/crawl/website/index.js"
+    },
+    "./discord": {
+      "types": "./dist/crawl/discord/index.d.ts",
+      "default": "./dist/crawl/discord/index.js"
     }
   },
   "files": [
