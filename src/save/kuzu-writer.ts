@@ -19,12 +19,27 @@ export type KuzuSinkConfig = {
   keyProp?: string;
 };
 
-/** ラベルが識別子として妥当か (Cypher のラベル/型名はパラメタ化できないため検証)。 */
 function assertSafeLabel(label: string): string {
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(label)) {
     throw new Error(`unsafe graph label: ${label}`);
   }
   return label;
+}
+
+/** props を `alias.k = $p_k` 形式の SET 句とパラメタ dict に展開する。Kuzu は SET n += $map 非対応のため。 */
+function buildSetClauses(
+  alias: string,
+  props: Record<string, unknown>,
+): { setClauses: string; params: Record<string, unknown> } {
+  const entries = Object.entries(props);
+  if (entries.length === 0) return { setClauses: '', params: {} };
+  const params: Record<string, unknown> = {};
+  const clauses = entries.map(([k, v]) => {
+    const paramKey = `p_${k}`;
+    params[paramKey] = v;
+    return `${alias}.${k} = $${paramKey}`;
+  });
+  return { setClauses: clauses.join(', '), params };
 }
 
 /** KgBatch を Kuzu へ書き込む sink。 */
@@ -53,24 +68,29 @@ export class KuzuSink implements Sink<KgBatch> {
 
   private async mergeNode(node: GraphNode): Promise<void> {
     const label = assertSafeLabel(node.label);
+    const props = node.props ?? {};
+    const { setClauses, params } = buildSetClauses('n', props);
     const query =
-      `MERGE (n:${label} {${this.keyProp}: $key}) ` +
-      `SET n += $props`;
-    await this.exec(query, { key: node.key, props: node.props ?? {} });
+      `MERGE (n:${label} {${this.keyProp}: $key})` +
+      (setClauses ? ` SET ${setClauses}` : '');
+    await this.exec(query, { key: node.key, ...params });
   }
 
   private async mergeEdge(edge: GraphEdge): Promise<void> {
     const fromLabel = assertSafeLabel(edge.from.label);
     const toLabel = assertSafeLabel(edge.to.label);
     const relLabel = assertSafeLabel(edge.label);
+    const props = edge.props ?? {};
+    const { setClauses, params } = buildSetClauses('r', props);
     const query =
       `MATCH (a:${fromLabel} {${this.keyProp}: $fromKey}), ` +
       `(b:${toLabel} {${this.keyProp}: $toKey}) ` +
-      `MERGE (a)-[r:${relLabel}]->(b) SET r += $props`;
+      `MERGE (a)-[r:${relLabel}]->(b)` +
+      (setClauses ? ` SET ${setClauses}` : '');
     await this.exec(query, {
       fromKey: edge.from.key,
       toKey: edge.to.key,
-      props: edge.props ?? {},
+      ...params,
     });
   }
 }

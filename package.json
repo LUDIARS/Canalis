@@ -3,8 +3,13 @@
   "version": "0.1.0",
   "description": "LUDIARS 共有データ取込パイプライン基盤 — crawl/scrape → clean/categorize → save/import の3ステージを契約で接続する。",
   "type": "module",
-  "repository": { "type": "git", "url": "git+https://github.com/LUDIARS/Canalis.git" },
-  "publishConfig": { "registry": "https://npm.pkg.github.com" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LUDIARS/Canalis.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -30,6 +35,18 @@
     "./llm": {
       "types": "./dist/llm/index.d.ts",
       "default": "./dist/llm/index.js"
+    },
+    "./youtube": {
+      "types": "./dist/crawl/youtube/index.d.ts",
+      "default": "./dist/crawl/youtube/index.js"
+    },
+    "./reddit": {
+      "types": "./dist/crawl/reddit/index.d.ts",
+      "default": "./dist/crawl/reddit/index.js"
+    },
+    "./website": {
+      "types": "./dist/crawl/website/index.d.ts",
+      "default": "./dist/crawl/website/index.js"
     }
   },
   "files": [
@@ -42,9 +59,14 @@
     "cli": "tsx src/cli.ts"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.7.0",
+    "kuzu": "^0.11.3",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
+  },
+  "dependencies": {
+    "js-yaml": "^4.2.0"
   }
 }
