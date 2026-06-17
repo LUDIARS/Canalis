@@ -47,6 +47,10 @@
     "./website": {
       "types": "./dist/crawl/website/index.d.ts",
       "default": "./dist/crawl/website/index.js"
+    },
+    "./notion-public": {
+      "types": "./dist/crawl/notion-public/index.d.ts",
+      "default": "./dist/crawl/notion-public/index.js"
     }
   },
   "files": [
@@ -67,6 +71,7 @@
     "vitest": "^2.1.0"
   },
   "dependencies": {
-    "js-yaml": "^4.2.0"
+    "js-yaml": "^4.2.0",
+    "playwright": "^1.44.0"
   }
 }
