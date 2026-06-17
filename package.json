@@ -51,6 +51,10 @@
     "./notion-public": {
       "types": "./dist/crawl/notion-public/index.d.ts",
       "default": "./dist/crawl/notion-public/index.js"
+    },
+    "./discord": {
+      "types": "./dist/crawl/discord/index.d.ts",
+      "default": "./dist/crawl/discord/index.js"
     }
   },
   "files": [

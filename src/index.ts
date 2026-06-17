@@ -16,6 +16,7 @@ export * from './crawl/youtube/index.js';
 export * from './crawl/reddit/index.js';
 export * from './crawl/website/index.js';
 export * from './crawl/notion-public/index.js';
+export * from './crawl/discord/index.js';
 export * from './save/index.js';
 export {
   runPipeline,
