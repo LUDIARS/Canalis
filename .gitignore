@@ -5,7 +5,8 @@ dist/
 .env.*
 # 設定ファイル (notion.token を暗号化保持)。 コミットしない。
 config.json
-# raw dump 既定置き場 (rawSave の出力先)
-data/
+# raw dump 既定置き場 (rawSave の出力先)。 リポ直下の runtime data dir のみ無視
+# (先頭 / が無いと spec/data/ など下層の data/ も無視してしまうため anchored)。
+/data/
 # FT runner (Python) のキャッシュ
 __pycache__/
