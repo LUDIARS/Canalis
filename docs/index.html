@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Canalis (Ci) — 共有データ取込パイプライン基盤</title>
+<meta name="description" content="LUDIARS 共有データ取込パイプライン基盤 Canalis の役割・特徴・設計のまとめ。" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<nav class="nav">
+  <span class="brand">Canalis <span class="ci">Ci</span></span>
+  <a class="tab active" href="index.html">概要</a>
+  <a class="tab" href="graph.html">グラフビュー</a>
+  <a class="tab" href="api.html">API リファレンス</a>
+  <span class="spacer"></span>
+  <a class="gh" href="https://github.com/LUDIARS/Canalis" target="_blank" rel="noopener">GitHub ↗</a>
+</nav>
+
+<div class="wrap">
+
+  <header class="hero">
+    <h1>Canalis <span style="color:var(--accent)">— Ci</span></h1>
+    <p class="sub">LUDIARS 共有 <b>データ取込パイプライン基盤</b>（ラテン語で「管・水路」）</p>
+    <p class="tagline">
+      外部データを <b>① crawl/scrape → ② clean/categorize → ③ save/import</b> の 3 ステージで取り込む共有ライブラリ。
+      各ステージは<b>型（契約）で疎結合</b>に接続され、サービスは<b>マニフェスト</b>で流れを宣言する。
+      Tirocinium の Notion クローラと Discutere の外部コメント収集を共通基盤へ載せ替えるために起こされた。
+    </p>
+  </header>
+
+  <!-- ============ 役割 ============ -->
+  <h2 id="role">サービスの役割</h2>
+  <p>
+    Canalis は「集める → 整える → 保存する」を 1 本のパイプラインとして抽象化し、
+    その<b>骨格（契約・汎用 adapter/writer・実行 runner）だけ</b>を共有する。
+    サービス固有の整形ロジックは持たず、各サービスが「②Transform 1 本 + マニフェスト 1 枚」を足すだけで
+    新しい取込パイプラインを宣言できる。
+  </p>
+  <div class="cards">
+    <div class="card">
+      <h3>① 取得を共通化</h3>
+      <p>Notion / YouTube / Reddit / Website / Discord などの取得元 adapter を共有。被れば流用、無ければ 1 つ足す。</p>
+    </div>
+    <div class="card">
+      <h3>② 整形は各サービス</h3>
+      <p>サービス内部仕様への整形・分類は各リポの責務。共有 lib には 1 サービス専用ロジックを置かない。</p>
+    </div>
+    <div class="card">
+      <h3>③ 保存を共通化</h3>
+      <p>raw(JSONL) / Postgres / Kuzu / FT の writer を共有。②が作った最終形を verbatim に書くだけ。</p>
+    </div>
+    <div class="card">
+      <h3>再処理 (replay)</h3>
+      <p>①→② が常に <code>RawRecord[]</code> なので、raw store から ②→③ を再クロールせず焼き直せる。</p>
+    </div>
+  </div>
+
+  <!-- ============ 3 ステージ ============ -->
+  <h2 id="stages">3 ステージ</h2>
+  <div class="flow">
+    <div class="stage s1">
+      <div class="n">① CRAWL / SCRAPE</div>
+      <h3>取得（汎用）</h3>
+      <p><code>Source</code> 実装が取得元から <code>RawRecord[]</code> を得る。adapter を足せば取得元が増える。</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="stage s2">
+      <div class="n">② CLEAN / CATEGORIZE</div>
+      <h3>整形（サービス固有）</h3>
+      <p><code>Transform</code> が sink ネイティブの最終形へ整形・分類・付与する。<b>各サービスリポに置く。</b></p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="stage s3">
+      <div class="n">③ SAVE / IMPORT</div>
+      <h3>保存（汎用）</h3>
+      <p><code>Sink</code> 実装が保存先へ verbatim 書込。table-map も射影も持たない。</p>
+    </div>
+  </div>
+  <pre><code>① Crawl/Scrape ──RawRecord[]──┬──▶ raw sink (verbatim 保存)        [任意]
+   汎用 (adapter)              │
+                              └──▶ ② Clean/Categorize ──sink-native──▶ ③ Save/Import
+                                    サービス固有 (plugin)              汎用 (writer)</code></pre>
+  <p>
+    関係の全体像と各機能の依存は <a href="graph.html"><b>グラフビュー</b></a> で、
+    公開関数・型・パラメータは <a href="api.html"><b>API リファレンス</b></a> で確認できる。
+  </p>
+
+  <!-- ============ 設計原則 ============ -->
+  <h2 id="principles">設計原則（鉄則）</h2>
+
+  <div class="note rule">
+    <b>1. LLM をできる限り排除する（最重要）。</b><br />
+    共有 lib（<code>@ludiars/canalis</code>）は LLM への依存を一切持たない（SDK も API キーも要求しない）。
+    整形・分類は<b>決定論的手段を第一</b>とする（セレクタ / 正規表現 / パーサ / 辞書 / ルール）。
+    LLM が避けられない処理は、サービス側 ②の中で<b>明示的な opt-in アダプタ</b>として実装する。
+    opt-in ヘルパは別サブパス <span class="subpath">@ludiars/canalis/llm</span> に隔離し、root の公開面（core/crawl/save）には混ぜない。
+  </div>
+  <div class="note rule">
+    <b>2. 整形の知識は ②に集約し、③は verbatim 書込。</b><br />
+    ②が「保存先のネイティブ最終形」まで作り切る。③は渡された形をそのまま書くだけで、
+    table-map も射影もサービス知識も持たない。→ ③writer は sink エンジン 1 種につき 1 個で全サービス共有。
+  </div>
+  <div class="note rule">
+    <b>3. 共有 lib は 1 サービス専用ロジックを持たない。</b><br />
+    ① adapter（汎用）と ③ writer（汎用）と契約・runner だけを共有。②Transform は各サービスリポに置く。
+  </div>
+  <div class="note rule">
+    <b>4. ③writer に DB ドライバを直接依存させない。</b><br />
+    <code>SqlExecutor</code> / <code>CypherExecutor</code> を注入する（共有 lib は postgres/kuzu に直接依存しない）。
+    FT も <code>FtRunner</code> を注入し、学習ランタイム（Python/PEFT 等）に直接依存しない。
+  </div>
+
+  <!-- ============ 特徴 ============ -->
+  <h2 id="features">主な特徴</h2>
+  <table>
+    <thead><tr><th>特徴</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td>契約による疎結合</td><td><code>Source</code> / <code>Transform</code> / <code>Sink</code> の 3 interface と、<code>RawRecord</code> / <code>SinkBatch</code> エンベロープのみで接続。</td></tr>
+      <tr><td>マニフェスト駆動</td><td>サービスはコードでなく宣言的な manifest（YAML/JSON）で流れを定義。<code>runPipeline(manifest, deps)</code> が解釈実行。</td></tr>
+      <tr><td>依存注入 (DI)</td><td>source / transform / sink / DB driver / LLM / FT runner はすべて呼び出し側が注入。core はグローバル registry を持たない。</td></tr>
+      <tr><td>依存ゼロのクローラ</td><td>各 adapter は raw fetch（+ 任意で Playwright）で実装。SDK 依存なしで移植・流用が容易。</td></tr>
+      <tr><td>replay（再処理）</td><td>raw store の <code>RawRecord[]</code> を起点に ②→③ を焼き直せる。rate-limit / コスト / 元データ消失に強い。</td></tr>
+      <tr><td>安価推論カスケード</td><td><span class="subpath">@ludiars/canalis/llm</span> に Tier0 決定論 → Tier1/2 注入モデルの段階分類。LLM は最後の手段。</td></tr>
+      <tr><td>学習的インポート (FT)</td><td>収集データをローカル LLM の fine-tune 教師として materialize（分類器 / 生成 LLM の両対応）。学習は core 外 runner。</td></tr>
+      <tr><td>secret 暗号化</td><td>Notion token は config.json に salt 付き AES-256-GCM で暗号化保存（非シークレットは平文）。</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ============ レビュー結果 ============ -->
+  <h2 id="review">レビュー結果 — spec ↔ コード対応</h2>
+  <p>
+    設計ドキュメント（<code>DESIGN.md</code> / <code>README.md</code> / <code>CLAUDE.md</code>）と実コードを突き合わせた結果。
+    <b>設計原則はコードに忠実に守られている</b>一方、<b>機能カタログの記述がコードに追いついていない</b>箇所がある。
+    本サイトは<b>現行コードの実態</b>を反映してまとめている。
+  </p>
+  <table>
+    <thead><tr><th>項目</th><th>状態</th><th>所見</th></tr></thead>
+    <tbody>
+      <tr><td>原則: LLM 隔離（root に混ぜない）</td><td class="status-ok">一致</td><td><code>src/index.ts</code> は <code>llm/</code> を export しない。LLM は <code>/llm</code> サブパスのみ。</td></tr>
+      <tr><td>原則: ②を共有 lib に置かない</td><td class="status-ok">一致</td><td>core/crawl/save/runner のみ。Transform は契約 (interface) だけ。</td></tr>
+      <tr><td>原則: ③ verbatim + driver 注入</td><td class="status-ok">一致</td><td>Postgres/Kuzu は <code>SqlExecutor</code>/<code>CypherExecutor</code> 注入。直接依存なし。</td></tr>
+      <tr><td>契約（RawRecord / エンベロープ / manifest）</td><td class="status-ok">一致</td><td>DESIGN §2–3 の型がコードと一致。</td></tr>
+      <tr><td>① crawl adapter 群</td><td class="status-drift">ドキュメント遅延</td><td>DESIGN §5/README は「notion のみ」。実際は <b>7 adapter</b>（notion, notion-public, youtube, reddit, website, discord, discord-guild）。discord / notion-public は DESIGN.md に記載なし。</td></tr>
+      <tr><td>LLM カスケード（cascade/lexicon/scorer）</td><td class="status-drift">ドキュメント遅延</td><td>DESIGN §0.1 は <code>localOpenAiExecutor</code> のみ記載。実際は <code>Cascade</code> / <code>lexiconScorer</code> / <code>executorScorer</code> も実装済（未記載）。</td></tr>
+      <tr><td>manifest ローダ（YAML/JSON）</td><td class="status-drift">記述が古い</td><td>DESIGN §6 で「未了」だが <code>loadManifest</code> は実装＋テスト済。</td></tr>
+      <tr><td>DB 結合テスト</td><td class="status-todo">一部</td><td>Kuzu 結合テストは通電（実行・成功）。Postgres 結合テストは live DB が無いため skip。</td></tr>
+      <tr><td>FT runner 実体</td><td class="status-todo">一部</td><td>TS 側 <code>FtSink</code> は実装＋テスト済。Python runner は <code>causal-lm</code>(Gemma) のみ、<code>classification</code> は別 runner（未）。</td></tr>
+    </tbody>
+  </table>
+  <div class="note warn">
+    <b>推奨フォローアップ:</b> <code>DESIGN.md §5</code> の adapter 一覧と <code>§0.1</code> の LLM 節を現状（7 adapter ＋ cascade サブシステム）に追従し、
+    <code>§6</code> の「未了」から manifest ローダ／Kuzu 結合テストを完了側へ移す。
+  </div>
+
+  <!-- ============ 使い方 ============ -->
+  <h2 id="usage">使い方（現 scaffold v0.1）</h2>
+  <pre><code>npm install
+npm run build
+npm test          # fake で ①→② 契約を検証
+
+# Notion token を暗号化して config.json に保存
+npm run cli -- config set notion.token
+npm run cli -- config show
+
+# ① crawl + raw 保存だけの standalone
+npm run cli -- notion-crawl &lt;databaseId&gt; --out data/raw</code></pre>
+  <p>プログラムからフルパイプライン:</p>
+  <pre><code>import { runPipeline, NotionSource, PostgresSink, JsonlRawSink } from '@ludiars/canalis';
+
+const report = await runPipeline(manifest, {
+  sources:    { notion: new NotionSource() },
+  transforms: { 'tr:company-normalize': myTransform },  // ② はサービス側
+  sinks: {
+    jsonl:    new JsonlRawSink({ dir: 'data/raw/tr' }),
+    postgres: new PostgresSink(mySqlExecutor),
+  },
+});</code></pre>
+
+  <h2 id="status">ステータス</h2>
+  <p>
+    scaffold（v0.1）。① 7 adapter 実装済 / 契約・runner・③writer・llm カスケード・FT 骨組み済 /
+    実 DB 結合テストは Kuzu のみ通電。残タスクは <code>DESIGN.md §6</code>。
+  </p>
+
+</div>
+
+<footer>
+  Canalis (Ci) — LUDIARS 共有データ取込パイプライン基盤 ·
+  <a href="https://github.com/LUDIARS/Canalis">github.com/LUDIARS/Canalis</a> ·
+  このサイトは <code>/docs</code> から GitHub Pages で公開されています。
+</footer>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>グラフビュー — Canalis (Ci)</title>
+<meta name="description" content="Canalis のドメイン/機能リストとその関連を示すインタラクティブなグラフビュー。" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<nav class="nav">
+  <span class="brand">Canalis <span class="ci">Ci</span></span>
+  <a class="tab" href="index.html">概要</a>
+  <a class="tab active" href="graph.html">グラフビュー</a>
+  <a class="tab" href="api.html">API リファレンス</a>
+  <span class="spacer"></span>
+  <a class="gh" href="https://github.com/LUDIARS/Canalis" target="_blank" rel="noopener">GitHub ↗</a>
+</nav>
+
+<div class="wrap" style="max-width:1180px">
+  <header style="padding:24px 0 6px">
+    <h1 style="font-size:30px;margin:0 0 6px">ドメイン / 機能グラフ</h1>
+    <p class="sub" style="color:var(--fg-dim)">
+      Canalis を構成するドメイン（契約・①Crawl・②Transform・③Save・Runner・LLM・Config・外部）と機能、そしてその関連。
+      ノードをクリックで詳細、凡例クリックでドメイン表示切替、背景ドラッグで移動、ホイールで拡大縮小。
+    </p>
+  </header>
+
+  <div class="controls">
+    <button id="btnReset">レイアウト初期化</button>
+    <button id="btnShake">揺らす（再配置）</button>
+  </div>
+
+  <div class="graph-shell">
+    <div class="graph-stage">
+      <svg id="graph" xmlns="http://www.w3.org/2000/svg">
+        <g id="zoomLayer"></g>
+      </svg>
+    </div>
+    <aside class="graph-side">
+      <div class="legend" id="legendBox">
+        <h3>ドメイン（凡例）</h3>
+        <div id="legend"></div>
+      </div>
+      <div class="side-box">
+        <h3>選択中のノード</h3>
+        <div class="node-info" id="nodeInfo"></div>
+      </div>
+    </aside>
+  </div>
+
+  <h2 style="margin-top:34px">関連の読み方</h2>
+  <ul>
+    <li><b>implements</b> — 各 adapter は <code>Source</code> を、各 writer は <code>Sink</code> を実装する。</li>
+    <li><b>produces / 入力</b> — <code>Source → RawRecord → ②Transform → SinkBatch → ③Sink</code> のデータフロー。</li>
+    <li><b>kind=rdb/kg/ft</b> — <code>SinkBatch</code> は種別で対応 sink へ振り分けられる（runner のルーティング）。</li>
+    <li><b>破線</b> — opt-in / core 外境界（LLM 利用・FT runner 起動・raw verbatim・②の所在）。</li>
+  </ul>
+  <p style="color:var(--fg-dim);font-size:13px">
+    色の濃淡: 塗りが薄いノードは型/インターフェース（契約）、濃いノードは具象クラス/関数、破線円は core 外の存在。
+    関数・型の詳細なシグネチャとパラメータは <a href="api.html">API リファレンス</a> を参照。
+  </p>
+</div>
+
+<footer>
+  Canalis (Ci) — LUDIARS 共有データ取込パイプライン基盤 ·
+  <a href="https://github.com/LUDIARS/Canalis">github.com/LUDIARS/Canalis</a>
+</footer>
+
+<script src="graph-data.js"></script>
+<script src="graph.js"></script>
+</body>
+</html>
