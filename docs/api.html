@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>API リファレンス — Canalis (Ci)</title>
+<meta name="description" content="Canalis の公開 API（型・関数・クラス・CLI）。トグルで詳細とパラメータを展開。" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<nav class="nav">
+  <span class="brand">Canalis <span class="ci">Ci</span></span>
+  <a class="tab" href="index.html">概要</a>
+  <a class="tab" href="graph.html">グラフビュー</a>
+  <a class="tab active" href="api.html">API リファレンス</a>
+  <span class="spacer"></span>
+  <a class="gh" href="https://github.com/LUDIARS/Canalis" target="_blank" rel="noopener">GitHub ↗</a>
+</nav>
+
+<div class="wrap">
+  <header style="padding:24px 0 6px">
+    <h1 style="font-size:30px;margin:0 0 6px">API リファレンス</h1>
+    <p class="sub" style="color:var(--fg-dim)">
+      公開 API（<code>@ludiars/canalis</code> とサブパス）。各項目をクリックすると詳細とパラメータを展開できる。
+    </p>
+  </header>
+
+  <h2 id="entrypoints">エントリポイント（サブパス）</h2>
+  <table>
+    <thead><tr><th>import</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td><span class="subpath">@ludiars/canalis</span></td><td>core 契約 + 全 crawl adapter + save writer + runner + config（root 集約）</td></tr>
+      <tr><td><span class="subpath">@ludiars/canalis/core</span></td><td>契約のみ（型・interface・loadManifest）</td></tr>
+      <tr><td><span class="subpath">@ludiars/canalis/notion</span> 他</td><td>個別 crawl adapter（notion / notion-public / youtube / reddit / website / discord）</td></tr>
+      <tr><td><span class="subpath">@ludiars/canalis/save</span></td><td>③ writer（raw / postgres / kuzu / ft）</td></tr>
+      <tr><td><span class="subpath">@ludiars/canalis/llm</span></td><td>opt-in 推論カスケード + ローカル LLM executor（root には含めない）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="api-toolbar">
+    <input id="filter" type="text" placeholder="API をフィルタ（例: Source, Sink, reddit, executor …）" />
+    <button id="expandAll">すべて展開</button>
+    <button id="collapseAll">すべて閉じる</button>
+  </div>
+
+  <!-- =================== CORE =================== -->
+  <h2 id="core">core — 契約 <span class="pill core">core</span></h2>
+  <div class="api-group">
+
+    <details class="api-item" data-k="Source interface crawl">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">interface</span> Source&lt;C&gt; · name; crawl(config: C): Promise&lt;RawRecord[]&gt;</span></summary>
+      <div class="body">
+        <p>①Crawl の抽象契約。取得元から <code>RawRecord[]</code> を得る。adapter はこれを実装する。</p>
+        <table><thead><tr><th>メンバ</th><th>型</th><th>説明</th></tr></thead><tbody>
+          <tr><td><code>name</code></td><td><code>string</code></td><td>adapter 名。manifest の <code>crawl.sources[].adapter</code> と突合。</td></tr>
+          <tr><td><code>crawl(config)</code></td><td><code>(C) =&gt; Promise&lt;RawRecord[]&gt;</code></td><td>config は adapter 固有。</td></tr>
+        </tbody></table>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="Transform interface clean categorize">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">interface</span> Transform&lt;O&gt; · name; run(records: RawRecord[]): Promise&lt;O[]&gt;</span></summary>
+      <div class="body">
+        <p>②Clean/Categorize の契約。<code>RawRecord[]</code> を sink ネイティブのエンベロープへ整形する。
+        1 入力から複数 sink 向けエンベロープを出してよい。<b>実体はサービスリポ側</b>（共有 lib は契約のみ）。</p>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="Sink interface save accepts">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">interface</span> Sink&lt;P&gt; · name; accepts: SinkKind; write(payload: P): Promise&lt;void&gt;</span></summary>
+      <div class="body">
+        <p>③Save の契約。渡されたものを保存先へ verbatim 書込。<code>accepts</code> が <code>'raw'</code> の sink は
+        <code>RawRecord[]</code> を、それ以外は対応する <code>SinkBatch</code> を受ける。</p>
+        <table><thead><tr><th>メンバ</th><th>型</th><th>説明</th></tr></thead><tbody>
+          <tr><td><code>accepts</code></td><td><code>'raw'|'rdb'|'kg'|'ft'</code></td><td>受け付けるペイロード種別。runner のルーティングに使う。</td></tr>
+        </tbody></table>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="RawRecord type">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">type</span> RawRecord</span></summary>
+      <div class="body">
+        <p>①→②/①→raw の受け渡し型。source 非依存の正規化生レコード。</p>
+        <table><thead><tr><th>フィールド</th><th>型</th><th>説明</th></tr></thead><tbody>
+          <tr><td><code>source</code></td><td><code>string</code></td><td>取得元種別（例 "notion"）。</td></tr>
+          <tr><td><code>sourceId</code></td><td><code>string</code></td><td>source 内一意 ID（dedup キー）。</td></tr>
+          <tr><td><code>fetchedAt</code></td><td><code>string</code></td><td>取得時刻（ISO8601 / UTC）。</td></tr>
+          <tr><td><code>url? / title? / text?</code></td><td><code>string</code></td><td>text = 正規化本文（②の主入力）。</td></tr>
+          <tr><td><code>raw</code></td><td><code>unknown</code></td><td>source 原データ verbatim（replay / 監査）。</td></tr>
+          <tr><td><code>meta?</code></td><td><code>Record&lt;string,unknown&gt;</code></td><td>source 固有の補助情報。</td></tr>
+        </tbody></table>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="SinkBatch RdbBatch KgBatch FtBatch envelope type">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">type</span> SinkBatch = RdbBatch | KgBatch | FtBatch</span></summary>
+      <div class="body">
+        <p>②が出す sink ネイティブ「最終形」エンベロープ。<code>kind</code> で ③へ振り分ける。</p>
+        <table><thead><tr><th>種別</th><th>形</th></tr></thead><tbody>
+          <tr><td><code>RdbBatch</code></td><td><code>{ kind:'rdb'; upserts: { table; rows; conflictKey }[] }</code></td></tr>
+          <tr><td><code>KgBatch</code></td><td><code>{ kind:'kg'; nodes: GraphNode[]; edges: GraphEdge[] }</code></td></tr>
+          <tr><td><code>FtBatch</code></td><td><code>{ kind:'ft'; task; examples: FtExample[]; dataset?; model? }</code></td></tr>
+        </tbody></table>
+        <p>関連型: <code>Row</code>, <code>RdbUpsert</code>, <code>GraphNode</code>, <code>GraphEdge</code>, <code>NodeRef</code>,
+        <code>FtTask</code>, <code>FtClassificationExample</code>, <code>FtChatExample</code>, <code>FtPromptExample</code>,
+        <code>FtExample</code>, <code>SinkKind</code>。</p>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="Manifest SourceSpec SinkSpec type">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">type</span> Manifest · SourceSpec · SinkSpec</span></summary>
+      <div class="body">
+        <p>パイプライン宣言。サービスはコードでなくこの形で流れを定義する。</p>
+        <table><thead><tr><th>フィールド</th><th>型</th><th>説明</th></tr></thead><tbody>
+          <tr><td><code>pipeline</code></td><td><code>string</code></td><td>パイプライン名（ログ/レポート用）。</td></tr>
+          <tr><td><code>crawl.sources</code></td><td><code>SourceSpec[]</code></td><td><code>{ adapter; config }</code> の配列。</td></tr>
+          <tr><td><code>crawl.rawSave?</code></td><td><code>SinkSpec</code></td><td>①出力を verbatim 保存する raw sink（任意）。</td></tr>
+          <tr><td><code>transform?</code></td><td><code>string</code></td><td>②の adapter 名。省略時は raw 取得のみ。</td></tr>
+          <tr><td><code>save?</code></td><td><code>SinkSpec[]</code></td><td>③保存先（複数可）。<code>{ adapter; accepts; config? }</code>。</td></tr>
+          <tr><td><code>replayFrom?</code></td><td><code>SinkSpec</code></td><td>再処理モード。raw store から読み直す。</td></tr>
+        </tbody></table>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="loadManifest function yaml json">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">function</span> loadManifest(filePath: string): Promise&lt;Manifest&gt;</span></summary>
+      <div class="body">
+        <p>YAML（<code>.yaml</code>/<code>.yml</code>）または JSON ファイルを <code>Manifest</code> として読み込む。
+        <code>pipeline</code>（string）と <code>crawl</code>（object）の存在を検証し、無ければ throw。</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- =================== RUNNER =================== -->
+  <h2 id="runner">runner — 実行 <span class="pill runner">runner</span></h2>
+  <div class="api-group">
+    <details class="api-item" data-k="runPipeline function orchestrator deps">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">function</span> runPipeline(manifest: Manifest, deps: PipelineDeps): Promise&lt;RunReport&gt;</span></summary>
+      <div class="body">
+        <p>manifest を解釈して 3 ステージを実行する。<code>crawl(①) → [rawSave] → transform(②) → save(③)</code>。
+        実体は <code>deps</code> として注入する（adapter 名 → インスタンス）。replayFrom 指定 + replayLoader があれば replay モード。</p>
+        <h3>PipelineDeps</h3>
+        <table><thead><tr><th>キー</th><th>型</th><th>説明</th></tr></thead><tbody>
+          <tr><td><code>sources</code></td><td><code>Record&lt;string, Source&gt;</code></td><td>必須。adapter 名 → Source。</td></tr>
+          <tr><td><code>transforms?</code></td><td><code>Record&lt;string, Transform&gt;</code></td><td>②の名前解決用。</td></tr>
+          <tr><td><code>sinks</code></td><td><code>Record&lt;string, Sink&gt;</code></td><td>必須。adapter 名 → Sink。</td></tr>
+          <tr><td><code>replayLoader?</code></td><td><code>(spec) =&gt; Promise&lt;RawRecord[]&gt;</code></td><td>replayFrom の起点読込。</td></tr>
+        </tbody></table>
+        <h3>RunReport（戻り値）</h3>
+        <p><code>{ pipeline; mode:'crawl'|'replay'; recordCount; rawSaved; written: {sink;kind;batches}[]; errors: StageError[] }</code>。
+        sink の <code>accepts</code> と manifest の宣言が食い違うと throw。各ステージのエラーは <code>errors</code> に集約（致命でないものは継続）。</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- =================== CRAWL =================== -->
+  <h2 id="crawl">① Crawl adapter <span class="pill crawl">crawl</span></h2>
+  <div class="api-group">
+
+    <details class="api-item" data-k="NotionSource notion class crawlDatabase NotionApiClient">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">class</span> NotionSource <span style="color:var(--fg-dim)">implements Source</span> · name="notion"</span></summary>
+      <div class="body">
+        <p>Notion DB を再帰クロール（公式 REST API・token 必要）。Tirocinium <code>packages/notion</code> から移植。</p>
+        <h3>config: NotionSourceConfig</h3>
+        <table><thead><tr><th>パラメータ</th><th>型</th><th>既定 / 説明</th></tr></thead><tbody>
+          <tr><td><code>databaseId</code></td><td><code>string</code></td><td>必須。対象 Notion database id。</td></tr>
+          <tr><td><code>token?</code></td><td><code>string</code></td><td>integration token。省略時 env <code>NOTION_TOKEN</code>。</td></tr>
+          <tr><td><code>crawl?.maxDepth</code></td><td><code>number</code></td><td>既定 3。row=0 から潜る深さ。</td></tr>
+          <tr><td><code>crawl?.maxPages</code></td><td><code>number</code></td><td>既定 500。安全弁。</td></tr>
+          <tr><td><code>crawl?.includeChildDatabases</code></td><td><code>boolean</code></td><td>既定 true。child_database の row も辿る。</td></tr>
+        </tbody></table>
+        <p><b>deps</b>（コンストラクタ）: <code>{ api?: NotionApi; now?: () =&gt; string }</code>（テスト/再利用で差し替え）。</p>
+        <p><b>関連エクスポート</b>: <code>crawlDatabase(api, databaseId, opts)</code>, <code>NotionApiClient</code>,
+        <code>createNotionClient(config)</code>, <code>blocksToMarkdown</code>, <code>extractTitle</code>, <code>simplifyProperties</code>。</p>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="NotionPublicSource notion-public playwright class">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">class</span> NotionPublicSource <span style="color:var(--fg-dim)">implements Source</span> · name="notion-public"</span></summary>
+      <div class="body">
+        <p>公開 Notion ページを Playwright でレンダリング取得（API token 不要）。1 URL → 1 RawRecord。</p>
+        <h3>config: NotionPublicSourceConfig</h3>
+        <table><thead><tr><th>パラメータ</th><th>型</th><th>既定 / 説明</th></tr></thead><tbody>
+          <tr><td><code>url</code></td><td><code>string</code></td><td>必須。公開 Notion ページ URL。</td></tr>
+          <tr><td><code>options?.timeout</code></td><td><code>number</code></td><td>既定 30000 ms。</td></tr>
+          <tr><td><code>options?.scrollDelay</code></td><td><code>number</code></td><td>既定 800 ms。スクロール間待機。</td></tr>
+          <tr><td><code>options?.maxScrolls</code></td><td><code>number</code></td><td>既定 15。lazy-load 展開回数。</td></tr>
+        </tbody></table>
+        <p><b>deps</b>: <code>{ fetcher?: PageFetcher; now? }</code>。<b>関連</b>: <code>PlaywrightFetcher</code>（playwright を動的 import）。</p>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="YouTubeSource youtube class comments">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">class</span> YouTubeSource <span style="color:var(--fg-dim)">implements Source</span> · name="youtube"</span></summary>
+      <div class="body">
+        <p>YouTube Data API v3 の <code>commentThreads</code> をページネーション取得。</p>
+        <h3>config: YouTubeSourceConfig</h3>
+        <table><thead><tr><th>パラメータ</th><th>型</th><th>既定 / 説明</th></tr></thead><tbody>
+          <tr><td><code>videoId</code></td><td><code>string</code></td><td>必須。</td></tr>
+          <tr><td><code>apiKey</code></td><td><code>string</code></td><td>必須。API キー。</td></tr>
+          <tr><td><code>maxResults?</code></td><td><code>number</code></td><td>既定 100。最大取得コメント数。</td></tr>
+          <tr><td><code>textFormat?</code></td><td><code>'plainText'|'html'</code></td><td>既定 'plainText'。</td></tr>
+        </tbody></table>
+        <p><b>deps</b>: <code>{ fetch?; now? }</code>。</p>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="RedditSource reddit class posts comments">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">class</span> RedditSource <span style="color:var(--fg-dim)">implements Source</span> · name="reddit"</span></summary>
+      <div class="body">
+        <p>Reddit 公開 JSON API で投稿一覧 or 投稿コメントを取得（認証不要・User-Agent 必須）。</p>
+        <h3>config: RedditSourceConfig</h3>
+        <table><thead><tr><th>パラメータ</th><th>型</th><th>既定 / 説明</th></tr></thead><tbody>
+          <tr><td><code>mode?</code></td><td><code>'posts'|'comments'</code></td><td>既定 'posts'。</td></tr>
+          <tr><td><code>subreddit?</code></td><td><code>string</code></td><td>mode=posts で必須（r/ なし）。</td></tr>
+          <tr><td><code>postId?</code></td><td><code>string</code></td><td>mode=comments で必須。</td></tr>
+          <tr><td><code>subredditForPost?</code></td><td><code>string</code></td><td>comments 取得時の subreddit。</td></tr>
+          <tr><td><code>sort?</code></td><td><code>'hot'|'new'|'top'|'rising'</code></td><td>既定 'hot'（posts のみ）。</td></tr>
+          <tr><td><code>limit?</code></td><td><code>number</code></td><td>posts 既定 100 / comments 既定 500。</td></tr>
+        </tbody></table>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="WebsiteSource website class html parser lector">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">class</span> WebsiteSource <span style="color:var(--fg-dim)">implements Source</span> · name="website"</span></summary>
+      <div class="body">
+        <p>URL から HTML を取得。HTML→構造化テキストは <code>HtmlParser</code> を注入（Lector 等）。未注入時はタグ除去 + タイトル/同一ドメインリンク抽出のフォールバック。</p>
+        <h3>config: WebsiteSourceConfig</h3>
+        <table><thead><tr><th>パラメータ</th><th>型</th><th>既定 / 説明</th></tr></thead><tbody>
+          <tr><td><code>url</code></td><td><code>string</code></td><td>必須。</td></tr>
+          <tr><td><code>userAgent?</code></td><td><code>string</code></td><td>既定 <code>Canalis-Crawler/1.0</code>。</td></tr>
+          <tr><td><code>timeoutMs?</code></td><td><code>number</code></td><td>既定 10000。</td></tr>
+        </tbody></table>
+        <p><b>deps</b>: <code>{ fetch?; now?; htmlParser?: HtmlParser }</code>。</p>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="DiscordSource discord class channel messages">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">class</span> DiscordSource <span style="color:var(--fg-dim)">implements Source</span> · name="discord"</span></summary>
+      <div class="body">
+        <p>Discord 1 チャンネルのメッセージを取得（REST API v10・raw fetch・429 リトライ）。</p>
+        <h3>config: DiscordSourceConfig</h3>
+        <table><thead><tr><th>パラメータ</th><th>型</th><th>既定 / 説明</th></tr></thead><tbody>
+          <tr><td><code>channelId</code></td><td><code>string</code></td><td>必須。</td></tr>
+          <tr><td><code>token?</code></td><td><code>string</code></td><td>Bot token。省略時 env <code>DISCORD_BOT_TOKEN</code>。</td></tr>
+          <tr><td><code>guildId?</code></td><td><code>string</code></td><td>メッセージ URL 生成用。</td></tr>
+          <tr><td><code>options?.maxMessages</code></td><td><code>number</code></td><td>既定 100。</td></tr>
+          <tr><td><code>options?.before/after</code></td><td><code>string</code></td><td>ページネーションカーソル。</td></tr>
+          <tr><td><code>options?.oldestFirst</code></td><td><code>boolean</code></td><td>既定 false（新しい順）。</td></tr>
+        </tbody></table>
+        <p><b>関連</b>: <code>DiscordApiClient</code>, <code>createDiscordClient(token?)</code>, <code>crawlChannel</code>。</p>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="DiscordGuildSource discord-guild class forum thread">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">class</span> DiscordGuildSource <span style="color:var(--fg-dim)">implements Source</span> · name="discord-guild"</span></summary>
+      <div class="body">
+        <p>ギルド全テキスト/アナウンスチャンネル + フォーラムスレッド（アクティブ + アーカイブ）をクロール。1 チャンネル/投稿につき 1 RawRecord（会話はタイムライン化）。</p>
+        <h3>config: DiscordGuildSourceConfig</h3>
+        <table><thead><tr><th>パラメータ</th><th>型</th><th>既定 / 説明</th></tr></thead><tbody>
+          <tr><td><code>guildId</code></td><td><code>string</code></td><td>必須。</td></tr>
+          <tr><td><code>token?</code></td><td><code>string</code></td><td>省略時 env <code>DISCORD_BOT_TOKEN</code>。</td></tr>
+          <tr><td><code>channelTypes?</code></td><td><code>number[]</code></td><td>既定 <code>[0,5,15]</code>（TEXT/ANNOUNCEMENT/FORUM）。</td></tr>
+          <tr><td><code>excludeChannelIds?</code></td><td><code>string[]</code></td><td>除外チャンネル。</td></tr>
+          <tr><td><code>options?</code></td><td><code>DiscordCrawlOptions</code></td><td>各チャンネルへ適用。</td></tr>
+        </tbody></table>
+        <p><b>関連</b>: <code>crawlGuild(api, guildId, opts)</code>, <code>DEFAULT_CHANNEL_TYPES</code>。</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- =================== SAVE =================== -->
+  <h2 id="save">③ Save writer <span class="pill save">save</span></h2>
+  <div class="api-group">
+
+    <details class="api-item" data-k="JsonlRawSink raw jsonl class loadRawRecords replay">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">class</span> JsonlRawSink <span style="color:var(--fg-dim)">implements Sink</span> · accepts="raw"</span></summary>
+      <div class="body">
+        <p><code>RawRecord[]</code> を 1 行 1 レコードの JSONL で verbatim 保存。node の fs のみ依存。</p>
+        <table><thead><tr><th>config</th><th>型</th><th>説明</th></tr></thead><tbody>
+          <tr><td><code>dir</code></td><td><code>string</code></td><td>必須。出力ディレクトリ。</td></tr>
+          <tr><td><code>stamp?</code></td><td><code>string</code></td><td>ファイル名のタイムスタンプ（省略時は呼出時刻）。</td></tr>
+        </tbody></table>
+        <p><b>replay 用</b>: <code>loadRawRecordsFromFile(file)</code> / <code>loadRawRecordsFromDir(dir)</code>（<code>*.jsonl</code> を時系列連結）。</p>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="PostgresSink rdb class SqlExecutor upsert">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">class</span> PostgresSink(exec: SqlExecutor, name?) <span style="color:var(--fg-dim)">implements Sink</span> · accepts="rdb"</span></summary>
+      <div class="body">
+        <p><code>RdbBatch</code> を <code>INSERT … ON CONFLICT DO UPDATE</code> に落として upsert。識別子は安全に引用。
+        DB ドライバは<b>注入</b>（共有 lib は postgres に直接依存しない）。</p>
+        <table><thead><tr><th>引数</th><th>型</th><th>説明</th></tr></thead><tbody>
+          <tr><td><code>exec</code></td><td><code>SqlExecutor = (query, params) =&gt; Promise&lt;void&gt;</code></td><td>パラメタ化クエリ実行関数。</td></tr>
+          <tr><td><code>name?</code></td><td><code>string</code></td><td>既定 "postgres"。</td></tr>
+        </tbody></table>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="KuzuSink kg class CypherExecutor merge graph">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">class</span> KuzuSink(exec: CypherExecutor, config?, name?) <span style="color:var(--fg-dim)">implements Sink</span> · accepts="kg"</span></summary>
+      <div class="body">
+        <p><code>KgBatch</code> の node/edge を Kuzu へ <code>MERGE</code>。driver は<b>注入</b>。対象スキーマは事前作成済が前提（サービスの責務）。</p>
+        <table><thead><tr><th>引数</th><th>型</th><th>説明</th></tr></thead><tbody>
+          <tr><td><code>exec</code></td><td><code>CypherExecutor = (query, params) =&gt; Promise&lt;void&gt;</code></td><td>Cypher 実行関数。</td></tr>
+          <tr><td><code>config?.keyProp</code></td><td><code>string</code></td><td>既定 "key"。MERGE キーのプロパティ名。</td></tr>
+          <tr><td><code>name?</code></td><td><code>string</code></td><td>既定 "kuzu"。</td></tr>
+        </tbody></table>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="FtSink ft class FtRunner commandRunner FtJob fine-tune">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">class</span> FtSink(config: FtSinkConfig, name?) <span style="color:var(--fg-dim)">implements Sink</span> · accepts="ft"</span></summary>
+      <div class="body">
+        <p><code>FtBatch</code> を <code>&lt;dir&gt;/&lt;dataset&gt;/&lt;stamp&gt;/</code> に <code>data.jsonl</code> + <code>job.json</code> として materialize し、
+        任意で外部 <code>FtRunner</code> を起動。<b>core は学習を持たない</b>（LLM/ML 依存ゼロ）。</p>
+        <table><thead><tr><th>config</th><th>型</th><th>説明</th></tr></thead><tbody>
+          <tr><td><code>dir</code></td><td><code>string</code></td><td>必須。出力ルート。</td></tr>
+          <tr><td><code>runner?</code></td><td><code>FtRunner = (job: FtJob) =&gt; Promise&lt;void&gt;</code></td><td>未指定なら materialize のみ。</td></tr>
+          <tr><td><code>now?</code></td><td><code>() =&gt; string</code></td><td>stamp の時刻源。</td></tr>
+        </tbody></table>
+        <p><b>commandRunner(command, args?, {cwd}?)</b> — 外部コマンドを <code>&lt;command&gt; [...args] --job &lt;job.json&gt;</code> で spawn する FtRunner ファクトリ（shell 非経由・exit 購読）。
+        <b>FtJob</b>: <code>{ task; dataset; count; dataPath; jobPath; model; createdAt }</code>。</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- =================== LLM =================== -->
+  <h2 id="llm">LLM（opt-in） <span class="pill llm">llm</span> <span class="subpath">@ludiars/canalis/llm</span></h2>
+  <div class="api-group">
+    <div class="note rule" style="margin-top:0">
+      <b>root には含まれない。</b> LLM を使うサービス② が明示的にこのサブパスから import して DI する。
+      失敗（未起動/HTTPエラー/空応答）は throw → ②側で握って決定論フォールバックに倒す（LLM は従、heuristic が主）。
+    </div>
+
+    <details class="api-item" data-k="localOpenAiExecutor llm executor ollama vllm function">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">function</span> localOpenAiExecutor(opts): LlmExecutor</span></summary>
+      <div class="body">
+        <p>OpenAI 互換 <code>/v1/chat/completions</code> を叩く注入ヘルパ（Ollama / vLLM / LM Studio / llama.cpp）。SDK 依存も API キー要求も無い（raw fetch + baseUrl のみ）。</p>
+        <table><thead><tr><th>opts</th><th>型</th><th>既定 / 説明</th></tr></thead><tbody>
+          <tr><td><code>baseUrl</code></td><td><code>string</code></td><td>必須。末尾 <code>/v1</code>（例 <code>http://localhost:11434/v1</code>）。</td></tr>
+          <tr><td><code>model</code></td><td><code>string</code></td><td>必須。既定モデル（req.model が優先）。</td></tr>
+          <tr><td><code>apiKey?</code></td><td><code>string</code></td><td>設定時のみ <code>Authorization: Bearer</code>。</td></tr>
+          <tr><td><code>timeoutMs?</code></td><td><code>number</code></td><td>既定 120000。</td></tr>
+          <tr><td><code>fetchImpl?</code></td><td><code>typeof fetch</code></td><td>テスト差し替え。</td></tr>
+        </tbody></table>
+        <p><b>LlmExecutor</b> = <code>(req: LlmRequest) =&gt; Promise&lt;LlmResponse&gt;</code>。
+        <code>LlmRequest = { prompt; system?; model?; maxTokens?(既定4096); timeoutMs? }</code> /
+        <code>LlmResponse = { text; usage? }</code>。</p>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="Cascade class score tier">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">class</span> Cascade(tiers: TierScorer[], options?) · score / scoreBatch</span></summary>
+      <div class="body">
+        <p>段を束ね、安い順に評価し確信が出た段で打ち切る分類カスケード。<code>tiers = [Tier0 決定論, Tier1 ローカルモデル, Tier2 LLM]</code>。各段が <code>null</code>（abstain）なら次段へ。</p>
+        <table><thead><tr><th>メンバ</th><th>型</th><th>説明</th></tr></thead><tbody>
+          <tr><td><code>options.minConfidence?</code></td><td><code>number</code></td><td>既定 0。採用に必要な最小 confidence。</td></tr>
+          <tr><td><code>score(input)</code></td><td><code>Promise&lt;ScoreResult|null&gt;</code></td><td>1 件評価。解決段の index を <code>tier</code> に格納。</td></tr>
+          <tr><td><code>scoreBatch(inputs)</code></td><td><code>Promise&lt;(ScoreResult|null)[]&gt;</code></td><td>並行評価。</td></tr>
+        </tbody></table>
+        <p><b>toClassificationExample(text, result)</b> — カスケード結果を FT(分類) の <code>{ input, label }</code> 学習例に変換（自己改善ループ）。</p>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="lexiconScorer tier0 deterministic function dictionary">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">function</span> lexiconScorer(config: LexiconConfig): TierScorer</span></summary>
+      <div class="body">
+        <p>Tier0: 辞書 + 信号の決定論スコアラ（LLM/外部依存なし・純関数）。用語/emoji のラベル別重みを合算し最大ラベルを返す。閾値未満は abstain。</p>
+        <table><thead><tr><th>config</th><th>型</th><th>既定 / 説明</th></tr></thead><tbody>
+          <tr><td><code>terms</code></td><td><code>Record&lt;string, WeightMap&gt;</code></td><td>必須。用語 → ラベル別重み。</td></tr>
+          <tr><td><code>emoji?</code></td><td><code>Record&lt;string, WeightMap&gt;</code></td><td>emoji → ラベル別重み。</td></tr>
+          <tr><td><code>minWeight?</code></td><td><code>number</code></td><td>既定 1。採用最小合計重み。</td></tr>
+          <tr><td><code>caseInsensitive?</code></td><td><code>boolean</code></td><td>既定 true。</td></tr>
+        </tbody></table>
+      </div>
+    </details>
+
+    <details class="api-item" data-k="executorScorer tier function classifier labels">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">function</span> executorScorer(opts): TierScorer</span></summary>
+      <div class="body">
+        <p>Tier1/2: 注入 <code>LlmExecutor</code> を分類用 TierScorer に橋渡し。候補外応答は abstain（null）→ 次段。</p>
+        <table><thead><tr><th>opts</th><th>型</th><th>既定 / 説明</th></tr></thead><tbody>
+          <tr><td><code>executor</code></td><td><code>LlmExecutor</code></td><td>必須。例 <code>localOpenAiExecutor(...)</code>。</td></tr>
+          <tr><td><code>labels?</code></td><td><code>string[]</code></td><td>候補ラベル既定（input.labels が優先）。</td></tr>
+          <tr><td><code>system? / model?</code></td><td><code>string</code></td><td>system 指示 / モデル上書き。</td></tr>
+          <tr><td><code>confidence?</code></td><td><code>number</code></td><td>既定 0.85（LLM は確率を返さないため固定）。</td></tr>
+        </tbody></table>
+        <p><b>関連型</b>: <code>TierScorer</code>, <code>ScoreInput {text; signals?; labels?}</code>,
+        <code>ScoreResult {label; confidence; tier; scores?}</code>, <code>Signals</code>。</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- =================== CONFIG =================== -->
+  <h2 id="config">config <span class="pill config">config</span></h2>
+  <div class="api-group">
+    <details class="api-item" data-k="config resolveNotionToken getConfigStatus applyNotionConfigToEnv function">
+      <summary><span class="chev">▶</span><span class="sig"><span class="kw">function</span> resolveNotionToken / applyNotionConfigToEnv / getConfigStatus / configPath</span></summary>
+      <div class="body">
+        <p>リポ内 <code>config.json</code> による設定。<code>notion.token</code> は salt 付き AES-256-GCM 暗号化、非シークレット（version / minIntervalMs）は平文。master 鍵は env <code>CANALIS_MASTER_KEY</code> → 無ければマシン束縛値。</p>
+        <table><thead><tr><th>関数</th><th>戻り値</th><th>説明</th></tr></thead><tbody>
+          <tr><td><code>resolveNotionToken()</code></td><td><code>string | null</code></td><td>env <code>NOTION_TOKEN</code> 優先 → 無ければ config の復号トークン。</td></tr>
+          <tr><td><code>applyNotionConfigToEnv()</code></td><td><code>void</code></td><td>非シークレット設定を env へ注入（既存は上書きしない）。</td></tr>
+          <tr><td><code>getConfigStatus()</code></td><td><code>ConfigStatus</code></td><td>path / tokenSource / マスク表示 hint / version / minIntervalMs。</td></tr>
+          <tr><td><code>configPath()</code></td><td><code>string</code></td><td>env <code>CANALIS_CONFIG_PATH</code> → リポ直下 config.json。</td></tr>
+        </tbody></table>
+      </div>
+    </details>
+  </div>
+
+  <!-- =================== CLI =================== -->
+  <h2 id="cli">CLI <span class="pill ext">bin: canalis</span></h2>
+  <div class="api-group">
+    <details class="api-item" data-k="cli notion-crawl command standalone">
+      <summary><span class="chev">▶</span><span class="sig">$ canalis notion-crawl &lt;databaseId&gt; [--out &lt;dir&gt;] [--max-depth N] [--max-pages N]</span></summary>
+      <div class="body">
+        <p>②/③ のサービス固有コード無しで動く範囲 = ①Crawl + raw 保存 の standalone（Tirocinium <code>scripts/notion-crawl</code> 置換）。
+        token は env <code>NOTION_TOKEN</code> 優先 → 無ければ config の暗号化トークン。結果は <code>&lt;out&gt;/notion/&lt;databaseId&gt;/&lt;timestamp&gt;.jsonl</code>。</p>
+      </div>
+    </details>
+    <details class="api-item" data-k="cli config set unset show path command">
+      <summary><span class="chev">▶</span><span class="sig">$ canalis config set|unset|show|path …</span></summary>
+      <div class="body">
+        <table><thead><tr><th>サブコマンド</th><th>用途</th></tr></thead><tbody>
+          <tr><td><code>config set notion.token [value]</code></td><td>token 暗号化保存（value 省略で非表示入力 / パイプ可）。</td></tr>
+          <tr><td><code>config set notion.version &lt;v&gt;</code></td><td>Notion-Version（平文）。</td></tr>
+          <tr><td><code>config set notion.minIntervalMs &lt;ms&gt;</code></td><td>レート間隔 ms（平文）。</td></tr>
+          <tr><td><code>config unset notion.token</code></td><td>token 削除。</td></tr>
+          <tr><td><code>config show</code></td><td>設定一覧（token マスク）。</td></tr>
+          <tr><td><code>config path</code></td><td>config.json のパス。</td></tr>
+        </tbody></table>
+      </div>
+    </details>
+  </div>
+
+</div>
+
+<footer>
+  Canalis (Ci) — LUDIARS 共有データ取込パイプライン基盤 ·
+  <a href="https://github.com/LUDIARS/Canalis">github.com/LUDIARS/Canalis</a>
+</footer>
+
+<script>
+(function () {
+  var items = Array.prototype.slice.call(document.querySelectorAll('.api-item'));
+  document.getElementById('expandAll').addEventListener('click', function () {
+    items.forEach(function (d) { if (d.style.display !== 'none') d.open = true; });
+  });
+  document.getElementById('collapseAll').addEventListener('click', function () {
+    items.forEach(function (d) { d.open = false; });
+  });
+  var filter = document.getElementById('filter');
+  filter.addEventListener('input', function () {
+    var q = filter.value.trim().toLowerCase();
+    items.forEach(function (d) {
+      var hay = (d.getAttribute('data-k') + ' ' + d.textContent).toLowerCase();
+      var hit = !q || hay.indexOf(q) !== -1;
+      d.style.display = hit ? '' : 'none';
+      if (q && hit) d.open = true;
+    });
+  });
+})();
+</script>
+</body>
+</html>
