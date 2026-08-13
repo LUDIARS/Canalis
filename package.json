@@ -55,6 +55,10 @@
     "./discord": {
       "types": "./dist/crawl/discord/index.d.ts",
       "default": "./dist/crawl/discord/index.js"
+    },
+    "./steam": {
+      "types": "./dist/crawl/steam/index.d.ts",
+      "default": "./dist/crawl/steam/index.js"
     }
   },
   "files": [

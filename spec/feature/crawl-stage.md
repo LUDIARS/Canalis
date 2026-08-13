@@ -27,9 +27,23 @@ interface Source<C = unknown> {
 | `reddit` | Reddit 公開 JSON API (posts / comments) | `subreddit?` / `postId?` / `limit?` / `sort?` / `mode?` | 不要 (User-Agent 必須) |
 | `website` | 任意 URL の HTML 取得 → 構造化テキスト | `url` / `userAgent?` / `timeoutMs?` | 不要 |
 | `discord` | Discord REST API v10 (チャンネル / ギルド) | `channelId` または `guildId` / `token?` / `options?` | Bot token |
+| `steam-new-releases` | Steam store 検索の新作一覧 (リリース日降順、`results_html` を決定論パース) | `maxApps?` / `countryCode?` / `language?` | 不要 |
+| `steam-app-reviews` | Steam appreviews API (cursor 全件、`stopAtRecommendationId` で増分打ち切り) | `appId` / `languages?` / `maxReviews?` | 不要 |
+| `steam-user-reviews` | steamcommunity プロフィールの全レビュー (HTML 決定論パース、非公開は空) | `steamId` (SteamID64) / `maxPages?` | 不要 |
 
 > `website` は `HtmlParser` を注入する口を持つ (Lector 接続用)。未注入時はタグ除去 + タイトル抽出の
 > フォールバックパーサを使う。
+
+### steam (新作一覧 / アプリ別レビュー / ユーザ別レビュー) (SPEC-CRAWL-STEAM)
+
+3 系とも `fetchImpl` / `sleepImpl` / `now` 注入可・polite delay 既定 1200ms・API キー不要。
+集計だけ欲しい場合は `fetchAppReviewSummary(appId)` (num_per_page=0) が `total_reviews` を
+1 リクエストで返す (レビュー数閾値のフィルタ用)。ユーザ別レビューに公式 API は無いため
+steamcommunity プロフィール `recommended` ページをマーカー切り出し + タグ除去で決定論パースする
+(SteamID64 以外は fail-fast、非公開プロフィールは空配列)。SteamID64 は `meta.steamId` に保持し、
+同一人物の横断同定 (ペルソナ元データ化) は利用側 ② (Discutere `steam-persona`) が行う。
+外部から受ける app ID・ページ/件数上限・API filter は URL を組み立てる前に検証し、リダイレクトは
+追跡しない。取得失敗時の例外には、SteamID64 を含むリクエスト URL を出力しない。
 
 ## 振る舞い
 

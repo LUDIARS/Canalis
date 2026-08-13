@@ -1,0 +1,16 @@
+{
+  "name": "steam-adapter",
+  "description": "Steam の ①Crawl adapter 群。新作一覧 (store 検索の決定論パース) / アプリ別レビュー (appreviews cursor 全件・増分打ち切り・件数集計) / ユーザ別レビュー (steamcommunity プロフィールの決定論パース)。API キー不要・LLM なし。SteamID64 を meta.steamId として保持し、横断同定は利用側 (Discutere steam-persona) が行う。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)(src/crawl/steam/(types|http|app-reviews|new-releases|user-reviews|source|index)\\.ts|test/steam-source\\.test\\.ts)$"
+    }
+  ],
+  "specRefs": [
+    "feature: ① Crawl ステージ (取得元 adapter)",
+    "steam (新作一覧 / アプリ別レビュー / ユーザ別レビュー)"
+  ],
+  "source": "spec-review"
+}

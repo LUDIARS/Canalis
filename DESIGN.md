@@ -150,6 +150,7 @@ src/
   core/      契約: raw-record / envelope / pipeline(Source,Transform,Sink) / manifest
   crawl/
     notion/  ①adapter (Tr packages/notion 移植 + source.ts で RawRecord 化)
+    steam/   ①adapter (新作一覧 / アプリ別レビュー / ユーザ別レビュー。API キー不要・決定論パース)
   save/      ③writer: raw-writer(jsonl) / postgres-writer / kuzu-writer / ft-writer
   runners/ft/  FT runner 契約 + 参照 Python (core 外、 tsc 対象外)
   runner/    manifest 実行オーケストレータ
