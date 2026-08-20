@@ -1,0 +1,20 @@
+{
+  "name": "ingest-core",
+  "description": "取り込みの中核。 取得結果の保存、 実行単位 (runner) の制御、 共通のドメインモデル。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)src/core/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)src/save/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)src/runner/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)runners/(?:.*/)?[^/]+$"
+    }
+  ]
+}

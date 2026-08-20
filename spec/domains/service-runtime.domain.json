@@ -1,0 +1,23 @@
+{
+  "name": "service-runtime",
+  "description": "プロセスとしての Canalis。 CLI 入口、 設定、 テスト土台。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)src/(?:cli|index)\\.ts$"
+    },
+    {
+      "pathPattern": "(^|/)src/config/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)test/(?!steam-source\\.test\\.ts$)(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)src/(?!cli\\.ts$|index\\.ts$)[^/]+$"
+    },
+    {
+      "pathPattern": "(^|/)docs/(?:.*/)?[^/]+$"
+    }
+  ]
+}

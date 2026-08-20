@@ -1,0 +1,11 @@
+{
+  "name": "crawl-sources",
+  "description": "取り込み元ごとのクロール実装。 Discord / Notion など、 外部サービスからの取得と正規化をソース単位で閉じる。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)src/crawl/(?!steam/)(?:.*/)?[^/]+$"
+    }
+  ]
+}

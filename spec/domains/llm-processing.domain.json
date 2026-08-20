@@ -1,0 +1,11 @@
+{
+  "name": "llm-processing",
+  "description": "取り込んだ内容の LLM 処理。 要約・抽出・分類のモデル呼び出し層。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "(^|/)src/llm/(?:.*/)?[^/]+$"
+    }
+  ]
+}
