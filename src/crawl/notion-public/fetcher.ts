@@ -15,10 +15,20 @@ export class PlaywrightFetcher implements PageFetcher {
     const browser = await this.launch();
     const page = await browser.newPage();
     try {
-      await page.goto(url, { waitUntil: 'networkidle', timeout: options.timeout });
+      // Notion は通信を張り続けるため networkidle には到達しない。 HTML 読込後に本文要素の出現を待つ。
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: options.timeout });
 
-      // Notion の遅延レンダリングが始まるまで待つ
-      await page.waitForSelector('.notion-page-content', { timeout: options.timeout });
+      // Notion の遅延レンダリングが始まるまで待つ (空ページは非表示のことがあるので attached で判定)
+      try {
+        await page.waitForSelector('.notion-page-content', { state: 'attached', timeout: options.timeout });
+      } catch (err) {
+        // Cloudflare のボット確認画面に当たった場合は、 タイムアウトと区別できるよう明示する。
+        const title = await page.title().catch(() => '');
+        if (isBotChallengeTitle(title)) {
+          throw new Error(`Notion のボット確認画面で止められました (title="${title}"): ${url}`);
+        }
+        throw err;
+      }
 
       // スクロールで lazy-load ブロックを展開
       await scrollToBottom(page, options.scrollDelay, options.maxScrolls);
@@ -53,6 +63,11 @@ export class PlaywrightFetcher implements PageFetcher {
     }
     return this.browser;
   }
+}
+
+/** Cloudflare のボット確認画面のタイトルか。 */
+export function isBotChallengeTitle(title: string): boolean {
+  return /^(just a moment|attention required|しばらくお待ちください)/i.test(title.trim());
 }
 
 async function scrollToBottom(

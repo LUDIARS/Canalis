@@ -84,3 +84,12 @@ describe('Notion URL (notion.com)', () => {
     expect(parseNotionPageId(url)).toBe('2c439cbf-bab9-8011-b008-e3262ce3a98b');
   });
 });
+
+describe('isBotChallengeTitle', () => {
+  it('Cloudflare の確認画面タイトルを判定する', async () => {
+    const { isBotChallengeTitle } = await import('../src/crawl/notion-public/fetcher.js');
+    expect(isBotChallengeTitle('Just a moment...')).toBe(true);
+    expect(isBotChallengeTitle('Attention Required! | Cloudflare')).toBe(true);
+    expect(isBotChallengeTitle('コンビニドミナント')).toBe(false);
+  });
+});
