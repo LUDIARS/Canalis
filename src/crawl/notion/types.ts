@@ -40,7 +40,7 @@ export type NotionApi = {
 };
 
 export type CrawlOptions = {
-  /** DB row から潜る最大深さ (row=0)。 既定 3 */
+  /** 起点 (DB row / 起点ページ = 0) から潜る最大深さ。 既定 3 */
   maxDepth?: number;
   /** クロールする最大ページ数 (安全弁)。 既定 500 */
   maxPages?: number;
@@ -53,8 +53,8 @@ export type NotionCrawledPage = {
   id: string;
   url: string;
   title: string;
-  /** 由来: DB の row か、 ページ内の子ページか */
-  kind: 'database_row' | 'child_page';
+  /** 由来: DB の row / ページ内の子ページ / crawlPage の起点ページ */
+  kind: 'database_row' | 'child_page' | 'page';
   parentId: string;
   depth: number;
   /** ページ本文を Markdown 化したもの */
@@ -67,6 +67,15 @@ export type CrawlError = { id: string; stage: string; message: string };
 
 export type CrawlResult = {
   databaseId: string;
+  pages: NotionCrawledPage[];
+  errors: CrawlError[];
+  /** 上限到達等で打ち切ったか */
+  truncated: boolean;
+};
+
+export type PageCrawlResult = {
+  /** 起点ページ id */
+  pageId: string;
   pages: NotionCrawledPage[];
   errors: CrawlError[];
   /** 上限到達等で打ち切ったか */

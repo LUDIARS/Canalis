@@ -12,6 +12,7 @@ import type {
   NotionBlock,
   NotionCrawledPage,
   NotionPage,
+  PageCrawlResult,
 } from './types.js';
 
 type QueueItem = {
@@ -85,37 +86,22 @@ async function collectContent(api: NotionApi, rootId: string): Promise<PageConte
   return { flat, childPageIds, childDatabaseIds };
 }
 
-/** DB ID 配下のページをクロールする。 */
-export async function crawlDatabase(
-  api: NotionApi,
-  databaseId: string,
-  opts: CrawlOptions = {},
-): Promise<CrawlResult> {
+type QueueState = {
+  queue: QueueItem[];
+  pages: NotionCrawledPage[];
+  errors: CrawlError[];
+};
+
+/** queue を maxDepth / maxPages まで消化する (DB 起点・ページ起点で共有)。 打ち切ったら true。 */
+async function drainQueue(api: NotionApi, state: QueueState, opts: CrawlOptions): Promise<boolean> {
   const maxDepth = opts.maxDepth ?? 3;
   const maxPages = opts.maxPages ?? 500;
   const includeChildDatabases = opts.includeChildDatabases ?? true;
-
-  const pages: NotionCrawledPage[] = [];
-  const errors: CrawlError[] = [];
+  const { queue, pages, errors } = state;
   const visited = new Set<string>();
-  const queue: QueueItem[] = [];
-  let truncated = false;
-
-  // 起点: DB の row
-  try {
-    const rows = await queryAllRows(api, databaseId);
-    for (const page of rows) {
-      queue.push({ id: page.id, kind: 'database_row', parentId: databaseId, depth: 0, page });
-    }
-  } catch (err) {
-    errors.push({ id: databaseId, stage: 'queryDatabase', message: (err as Error).message });
-  }
 
   while (queue.length > 0) {
-    if (pages.length >= maxPages) {
-      truncated = true;
-      break;
-    }
+    if (pages.length >= maxPages) return true;
     const item = queue.shift()!;
     if (visited.has(item.id)) continue;
     visited.add(item.id);
@@ -172,6 +158,45 @@ export async function crawlDatabase(
       }
     }
   }
+  return false;
+}
 
-  return { databaseId, pages, errors, truncated };
+/** DB ID 配下のページをクロールする。 */
+export async function crawlDatabase(
+  api: NotionApi,
+  databaseId: string,
+  opts: CrawlOptions = {},
+): Promise<CrawlResult> {
+  const state: QueueState = { queue: [], pages: [], errors: [] };
+
+  // 起点: DB の row
+  try {
+    const rows = await queryAllRows(api, databaseId);
+    for (const page of rows) {
+      state.queue.push({ id: page.id, kind: 'database_row', parentId: databaseId, depth: 0, page });
+    }
+  } catch (err) {
+    state.errors.push({ id: databaseId, stage: 'queryDatabase', message: (err as Error).message });
+  }
+
+  const truncated = await drainQueue(api, state, opts);
+  return { databaseId, pages: state.pages, errors: state.errors, truncated };
+}
+
+/**
+ * 1 ページを起点にクロールする (起点 = depth 0)。
+ * 子ページ / 子 DB の row を maxDepth まで辿る。 maxDepth=0 なら起点ページ本文のみ。
+ */
+export async function crawlPage(
+  api: NotionApi,
+  pageId: string,
+  opts: CrawlOptions = {},
+): Promise<PageCrawlResult> {
+  const state: QueueState = {
+    queue: [{ id: pageId, kind: 'page', parentId: '', depth: 0 }],
+    pages: [],
+    errors: [],
+  };
+  const truncated = await drainQueue(api, state, opts);
+  return { pageId, pages: state.pages, errors: state.errors, truncated };
 }
