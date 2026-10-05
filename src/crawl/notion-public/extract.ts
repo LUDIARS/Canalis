@@ -17,7 +17,7 @@ export function extractPageContent(): ExtractionResult {
   const content = document.querySelector('.notion-page-content');
   if (!content) {
     const bodyText = (document.body as HTMLElement).innerText.trim();
-    return { title, blocks: bodyText ? [{ type: 'text', text: bodyText }] : [] };
+    return { title, blocks: bodyText ? [{ type: 'text', text: bodyText }] : [], links: [] };
   }
 
   // ブロック種別マップ (className の部分一致で判定)
@@ -58,7 +58,23 @@ export function extractPageContent(): ExtractionResult {
     if (text) blocks.push({ type: 'text', text });
   }
 
-  return { title, blocks };
+  // 子ページ / ページリンク: 同一オリジンで末尾が Notion の page id (32 桁 hex) のものだけ。
+  const links: string[] = [];
+  const self = location.origin + location.pathname;
+  for (const a of Array.from(content.querySelectorAll('a[href]'))) {
+    let u: URL;
+    try {
+      u = new URL((a as HTMLAnchorElement).href, location.href);
+    } catch {
+      continue;
+    }
+    const last = u.pathname.split('/').filter(Boolean).pop() ?? '';
+    if (u.origin !== location.origin || !/[0-9a-f]{32}$/i.test(last)) continue;
+    const abs = u.origin + u.pathname;
+    if (abs !== self && !links.includes(abs)) links.push(abs);
+  }
+
+  return { title, blocks, links };
 }
 
 /** ExtractedBlock[] を Markdown 文字列へ変換する (Node 側で実行)。 */

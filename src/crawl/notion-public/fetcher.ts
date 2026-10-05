@@ -1,20 +1,20 @@
 // Playwright を使った公開 Notion ページ取得の実装。
 // テスト時は PageFetcher を差し替えて playwright を起動しない。
+// ブラウザは初回 fetch で起動して使い回す (複数ページ取得を速くする)。 使い終わったら close()。
 
 /// <reference lib="dom" />
 
+import type { Browser } from 'playwright';
 import type { PageFetcher, FetchPageOptions, FetchedPage, ExtractionResult } from './types.js';
 import { extractPageContent, blocksToMarkdown } from './extract.js';
 
 export class PlaywrightFetcher implements PageFetcher {
+  private browser: Promise<Browser> | null = null;
+
   async fetch(url: string, options: FetchPageOptions): Promise<FetchedPage> {
-    // playwright は動的 import — 未インストール時のモジュールロードエラーを防ぐ
-    const { chromium } = await (import('playwright') as Promise<typeof import('playwright')>);
-
-    const browser = await chromium.launch({ headless: true });
+    const browser = await this.launch();
+    const page = await browser.newPage();
     try {
-      const page = await browser.newPage();
-
       await page.goto(url, { waitUntil: 'networkidle', timeout: options.timeout });
 
       // Notion の遅延レンダリングが始まるまで待つ
@@ -31,13 +31,32 @@ export class PlaywrightFetcher implements PageFetcher {
 
       return { url, title: result.title, markdown, raw: result };
     } finally {
-      await browser.close();
+      await page.close();
     }
+  }
+
+  async close(): Promise<void> {
+    const browser = this.browser;
+    this.browser = null;
+    if (browser) await (await browser).close();
+  }
+
+  private launch(): Promise<Browser> {
+    if (!this.browser) {
+      // playwright は動的 import — 未インストール時のモジュールロードエラーを防ぐ
+      this.browser = (import('playwright') as Promise<typeof import('playwright')>).then(({ chromium }) =>
+        chromium.launch({ headless: true }),
+      );
+      this.browser.catch(() => {
+        this.browser = null;
+      });
+    }
+    return this.browser;
   }
 }
 
 async function scrollToBottom(
-  page: Awaited<ReturnType<import('playwright').Browser['newPage']>>,
+  page: Awaited<ReturnType<Browser['newPage']>>,
   scrollDelay: number,
   maxScrolls: number,
 ): Promise<void> {

@@ -21,6 +21,7 @@ export class NotionPublicSource implements Source<NotionPublicSourceConfig> {
   async crawl(config: NotionPublicSourceConfig): Promise<RawRecord[]> {
     if (!config.url) throw new Error('NotionPublicSource: url is required');
 
+    const owned = !this.deps.fetcher;
     const fetcher = this.deps.fetcher ?? new PlaywrightFetcher();
     const now = this.deps.now ?? (() => new Date().toISOString());
 
@@ -30,7 +31,12 @@ export class NotionPublicSource implements Source<NotionPublicSourceConfig> {
       maxScrolls: config.options?.maxScrolls ?? 15,
     };
 
-    const page = await fetcher.fetch(config.url, opts);
+    let page;
+    try {
+      page = await fetcher.fetch(config.url, opts);
+    } finally {
+      if (owned) await fetcher.close?.();
+    }
     const fetchedAt = now();
 
     return [

@@ -35,12 +35,42 @@ export type ExtractedBlock = {
 export type ExtractionResult = {
   title: string;
   blocks: ExtractedBlock[];
+  /** 本文中の同一サイト Notion ページへのリンク (絶対 URL・重複なし)。 子ページ辿りに使う。 */
+  links?: string[];
 };
 
 /** ページ取得の抽象 (テスト時に差し替え可能)。 */
 export interface PageFetcher {
   fetch(url: string, options: FetchPageOptions): Promise<FetchedPage>;
+  /** 保持しているブラウザ等を解放する (複数ページ取得後に 1 回呼ぶ)。 */
+  close?(): Promise<void>;
 }
+
+/** crawlPublicPages の設定。 */
+export type NotionPublicPageCrawlOptions = NotionPublicCrawlOptions & {
+  /** 起点ページ (=0) から辿るリンク先ページの深さ。 既定 0 (起点のみ)。 */
+  maxDepth?: number;
+  /** 取得する最大ページ数 (安全弁)。 既定 50。 */
+  maxPages?: number;
+};
+
+/** crawlPublicPages で得た 1 ページ。 */
+export type NotionPublicCrawledPage = {
+  url: string;
+  title: string;
+  depth: number;
+  /** リンク元ページの URL (起点は '')。 */
+  parentUrl: string;
+  markdown: string;
+};
+
+export type NotionPublicCrawlResult = {
+  rootUrl: string;
+  pages: NotionPublicCrawledPage[];
+  errors: { url: string; message: string }[];
+  /** maxPages で打ち切ったか */
+  truncated: boolean;
+};
 
 /** PageFetcher の戻り値。 */
 export type FetchedPage = {

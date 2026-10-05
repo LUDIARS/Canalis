@@ -1,7 +1,7 @@
 // Notion の URL ⇄ page id の決定論変換。 本文中の Notion リンク検出も持つ。
-// 対応: www.notion.so / notion.so / *.notion.site。 `?p=<id>` (peek 表示) は path より優先。
+// 対応: www.notion.so / app.notion.com / *.notion.site。 `?p=<id>` (peek 表示) は path より優先。
 
-const NOTION_HOST_RE = /(^|\.)notion\.(so|site)$/i;
+const NOTION_HOST_RE = /(^|\.)notion\.(so|site|com)$/i;
 const ID32_RE = /([0-9a-f]{32})$/i;
 const UUID_RE = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 const URL_IN_TEXT_RE = /https?:\/\/[^\s<>()"'`]+/gi;
@@ -28,7 +28,7 @@ function idFromSegment(segment: string): string | null {
   return hex ? formatUuid(hex[1]!) : null;
 }
 
-/** Notion のホスト (notion.so / *.notion.site) を持つ URL か。 */
+/** Notion のホスト (notion.so / notion.com / *.notion.site) を持つ URL か。 */
 export function isNotionUrl(input: string): boolean {
   const u = toUrl(input);
   return !!u && /^https?:$/.test(u.protocol) && NOTION_HOST_RE.test(u.hostname);
