@@ -177,6 +177,33 @@ describe('parseUserReviewsHtml', () => {
     expect(got[0]?.text).toContain('hidden bit');
     expect(got[1]).toMatchObject({ appId: 222, recommended: false, text: 'Refunded.' });
   });
+
+  it('2026-10 の書式 (class の前の属性・末尾空白付き class・端末情報) でも抽出する', () => {
+    const html = `
+<div data-panel="{&quot;flow-children&quot;:&quot;row&quot;}" class="review_box">
+  <div class="review_box_content">
+    <div class="leftcol"><a href="https://steamcommunity.com/app/333/"></a></div>
+    <div class="rightcol">
+      <div class="vote_header">
+        <div class="title"><a href="https://steamcommunity.com/profiles/${STEAM_ID}/recommended/333/">Recommended</a></div>
+        <div class="hours">12.0 hrs on record</div>
+      </div>
+      <div class="content ">Still fun.<br>Two lines.</div>
+      <div class="reviewer_hardware_container"><div class="reviewer_hardware">Steam Deck</div></div>
+      <div class="posted">Posted 3 October.</div>
+    </div>
+  </div>
+</div>`;
+    const got = parseUserReviewsHtml(html, STEAM_ID);
+    expect(got).toHaveLength(1);
+    expect(got[0]).toMatchObject({
+      appId: 333,
+      recommended: true,
+      text: 'Still fun.\nTwo lines.',
+      hoursText: '12.0 hrs on record',
+      postedText: 'Posted 3 October.',
+    });
+  });
 });
 
 describe('fetchUserReviews', () => {

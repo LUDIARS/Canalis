@@ -14,7 +14,9 @@ export type FetchUserReviewsOptions = SteamHttpOptions & {
   language?: string;
 };
 
-const REVIEW_BOX_SPLIT = /<div class="review_box[\s"]/g;
+// 2026-10 時点の Steam は class の前に data-panel 属性を置く (`<div data-panel=… class="review_box">`)。
+// 属性順に依らず、`review_box_content` 等の子要素には当たらないように切り出す。
+const REVIEW_BOX_SPLIT = /<div\b[^>]*\bclass="review_box[\s"]/g;
 
 /** @implements SPEC-CRAWL-STEAM */
 function stripTags(html: string): string {
@@ -58,11 +60,12 @@ export function parseUserReviewsHtml(html: string, steamId: string): SteamUserRe
         : undefined;
 
     // content 内には spoiler 等で入れ子 div が入り得るため、 posted (または vote 行) を
-    // 終端アンカーにして広めに切り出し、 タグ除去で吸収する。
+    // 終端アンカーにして広めに切り出し、 タグ除去で吸収する。 class は `content ` のように
+    // 末尾空白付きで出ることがある。 本文と posted の間に入る端末情報 (reviewer_hardware) も終端にする。
     const contentHtml = between(
       block,
-      /<div class="content"[^>]*>/,
-      /<div class="(?:posted|received_compensation|review_rule_violation)"/
+      /<div class="content(?:\s[^"]*)?"[^>]*>/,
+      /<div class="(?:posted|received_compensation|review_rule_violation|reviewer_hardware_container)[\s"]/
     );
     if (contentHtml === undefined) continue;
 
