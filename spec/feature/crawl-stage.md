@@ -43,7 +43,9 @@ steamcommunity プロフィール `recommended` ページをマーカー切り�
 (SteamID64 以外は fail-fast、非公開プロフィールは空配列)。SteamID64 は `meta.steamId` に保持し、
 同一人物の横断同定 (ペルソナ元データ化) は利用側 ② (Discutere `steam-persona`) が行う。
 外部から受ける app ID・ページ/件数上限・API filter は URL を組み立てる前に検証し、リダイレクトは
-追跡しない。取得失敗時の例外には、SteamID64 を含むリクエスト URL を出力しない。
+同じホストの https への転送だけを最大 3 回たどる (個人用 URL を設定した人は `/profiles/<SteamID64>/…` が
+`/id/<名前>/…` へ 302 で送られるため。別ホスト・http への転送は拒否する)。取得失敗時の例外には、
+SteamID64 を含むリクエスト URL や転送先を出力しない。
 
 ## 振る舞い
 

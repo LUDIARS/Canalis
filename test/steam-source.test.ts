@@ -240,7 +240,7 @@ describe('fetchUserReviews', () => {
 });
 
 describe('Steam HTTP boundary', () => {
-  it('redirect を追跡せず、エラーに個人識別子を含む URL を出さない', async () => {
+  it('redirect を自動追跡させず、エラーに個人識別子を含む URL を出さない', async () => {
     let requestInit: RequestInit | undefined;
     const fetchImpl = (async (_input: string | URL | Request, init?: RequestInit) => {
       requestInit = init;
@@ -249,7 +249,38 @@ describe('Steam HTTP boundary', () => {
     const http = buildSteamHttp({ fetchImpl });
     const privateUrl = `https://steamcommunity.com/profiles/${STEAM_ID}/recommended/42/`;
     await expect(http.getText(privateUrl)).rejects.not.toThrow(STEAM_ID);
-    expect(requestInit?.redirect).toBe('error');
+    expect(requestInit?.redirect).toBe('manual');
+  });
+
+  it('同じホストへの転送 (個人用 URL) はたどる', async () => {
+    const seen: string[] = [];
+    const fetchImpl = (async (input: string | URL | Request) => {
+      const url = String(input);
+      seen.push(url);
+      if (url.includes('/profiles/')) {
+        return new Response(null, { status: 302, headers: { location: '/id/someone/recommended?p=1' } });
+      }
+      return new Response('ok', { status: 200 });
+    }) as typeof fetch;
+    const http = buildSteamHttp({ fetchImpl });
+    await expect(http.getText(`https://steamcommunity.com/profiles/${STEAM_ID}/recommended/?p=1`)).resolves.toBe('ok');
+    expect(seen[1]).toBe('https://steamcommunity.com/id/someone/recommended?p=1');
+  });
+
+  it('別ホスト・http への転送と転送の繰り返しは拒否し、転送先を出さない', async () => {
+    const to = (location: string) =>
+      (async () => new Response(null, { status: 302, headers: { location } })) as unknown as typeof fetch;
+    const start = `https://steamcommunity.com/profiles/${STEAM_ID}/recommended/`;
+    await expect(buildSteamHttp({ fetchImpl: to('https://evil.example/x') }).getText(start)).rejects.toThrow(
+      /another host/
+    );
+    await expect(buildSteamHttp({ fetchImpl: to('http://steamcommunity.com/x') }).getText(start)).rejects.toThrow(
+      /another host/
+    );
+    await expect(buildSteamHttp({ fetchImpl: to('/loop') }).getText(start)).rejects.toThrow(/too many redirects/);
+    await expect(buildSteamHttp({ fetchImpl: to('https://evil.example/x') }).getText(start)).rejects.not.toThrow(
+      /evil|profiles/
+    );
   });
 
   it('politeDelayMs が不正なら失敗する', () => {
