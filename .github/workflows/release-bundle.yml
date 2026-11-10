@@ -1,0 +1,78 @@
+name: Release bundle
+
+# GitHub Release に、build 済みですぐ使える bundle を添付する。
+# 利用側 (Consult の公開リンク取得など) は clone・npm ci・build をせず、asset を展開するだけで dist/ を import できる。
+#   - Release が published になったとき (Revisor の release-publish が作る Release) に自動で添付する
+#   - 既存の Release に後から添付するときは workflow_dispatch で tag を指定する
+# bundle の中身: dist/ package.json package-lock.json README.md BUNDLE.json と本番依存だけの node_modules/。
+# Playwright のブラウザ本体 (Chromium) は同梱しない。使う側で
+#   node node_modules/playwright/cli.js install chromium
+# を実行する (notion-public / website のブラウザ描画を使うときだけ要る)。
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 添付先の Release の tag (例 v0.9.0)
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-bundle-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Stage bundle (production dependencies only)
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/canalis"
+          mkdir -p "$stage"
+          cp -R dist package.json package-lock.json README.md "$stage/"
+          # 導入時処理は走らせない (Playwright の postinstall はブラウザを落としに行くため)。
+          (cd "$stage" && npm ci --omit=dev --ignore-scripts --no-audit --no-fund)
+          node -e '
+            const fs = require("node:fs");
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            const info = {
+              name: pkg.name,
+              version: pkg.version,
+              tag: process.env.TAG,
+              commit: process.env.GITHUB_SHA,
+              builtAt: new Date().toISOString(),
+              node: process.version,
+              browser: "not bundled: node node_modules/playwright/cli.js install chromium",
+            };
+            fs.writeFileSync(process.argv[1], JSON.stringify(info, null, 2) + "\n");
+          ' "$stage/BUNDLE.json"
+          echo "STAGE=$stage" >> "$GITHUB_ENV"
+      - name: Pack
+        run: |
+          set -euo pipefail
+          asset="canalis-${TAG}.tar.gz"
+          tar -czf "$asset" -C "$STAGE" .
+          sha256sum "$asset" | awk '{print $1}' > "$asset.sha256"
+          ls -l "$asset" "$asset.sha256"
+          echo "ASSET=$asset" >> "$GITHUB_ENV"
+      - name: Upload to the Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" "$ASSET" "$ASSET.sha256" --clobber

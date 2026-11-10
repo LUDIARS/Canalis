@@ -62,6 +62,16 @@ const report = await runPipeline(manifest, {
 
 詳細・契約・マニフェスト仕様は **`DESIGN.md`**。
 
+## build 済み bundle (GitHub Release)
+
+clone・`npm ci`・build をせずに使うときは、GitHub Release の asset `canalis-<tag>.tar.gz` を取る
+(`.github/workflows/release-bundle.yml` が Release の公開時に添付する。既存 Release への後付けは workflow_dispatch で tag を指定)。
+
+- 中身: `dist/` `package.json` `package-lock.json` `README.md` `BUNDLE.json` (版・commit・build 時刻) と、本番依存だけの `node_modules/`。
+- 検証: 同じ Release の `canalis-<tag>.tar.gz.sha256` (SHA-256 の 16 進 1 行) と照合してから展開する。Windows でも標準の `tar -xzf` で展開できる。
+- 使い方: 展開先の `dist/<部品>/index.js` を import する (例 `dist/crawl/notion-public/index.js`)。
+- ブラウザ描画 (notion-public / website) を使うときだけ、展開先で `node node_modules/playwright/cli.js install chromium` を一度実行する。Chromium は bundle に含めない。
+
 ## ステータス
 
 scaffold (v0.1)。① Notion adapter 移植済 / 契約・runner・③writer 骨組み済 / 実 DB 結合テスト未。
