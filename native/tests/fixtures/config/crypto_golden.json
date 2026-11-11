@@ -1,0 +1,36 @@
+{
+  "generator": "native/tests/golden/config_crypto.gen.mjs",
+  "master": "test-master-key",
+  "cases": [
+    {
+      "name": "string-token",
+      "value": "ntn_fake_token_for_golden_0000",
+      "blob": {
+        "v": 1,
+        "salt": "nlwYSAgFybfY1ouOzf68bw==",
+        "iv": "nJDTLlTGOHPwfkCb",
+        "tag": "e/iKYOIzWk7aXUyMknYJMw==",
+        "data": "SOVHnAHNqsrTvhulVNnWd7ijyp5qzm9e4qoV8TXn2z4="
+      }
+    },
+    {
+      "name": "unicode-object",
+      "value": {
+        "note": "日本語の値",
+        "n": 350,
+        "nested": [
+          true,
+          null
+        ]
+      },
+      "blob": {
+        "v": 1,
+        "salt": "J6DVmaqmC5i/MXAzNNXrpw==",
+        "iv": "AIom1A6GCjj1lmOb",
+        "tag": "rGk8A/4/nwvSrihAuHX7KA==",
+        "data": "QTjfMBcdwX5OL/bn4NKOdm5ymzrJp0+LiU//lQ9EzfOsBlDuR5pDJ6obVSI/jphyVXvBJMcSYw=="
+      }
+    }
+  ],
+  "configJson": "{\n  \"notion\": {\n    \"version\": \"2022-06-28\",\n    \"tokenEnc\": {\n      \"v\": 1,\n      \"salt\": \"9op8AhqQThcI+T6ep1G+ZQ==\",\n      \"iv\": \"wyRnsims0ijWeMUk\",\n      \"tag\": \"sXE9LUNx8r49KPD3XGcxSw==\",\n      \"data\": \"LScRkxweNgMT4tKRZ0xW4U+/OISd0aa/oxDFkQ==\"\n    },\n    \"minIntervalMs\": 350\n  }\n}\n"
+}

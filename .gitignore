@@ -13,3 +13,7 @@ __pycache__/
 
 # Anatomia のローカル状態 (ドメイン定義の正本は spec/domains/)
 .anatomia/
+
+# C++ 版のビルド出力
+/native/build/
+/build/

@@ -18,3 +18,13 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  # C++ 版 (native/、spec/plan/cpp-port.md)。依存は native/cmake/CanalisDependencies.cmake でハッシュ固定して取得する。
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libssl-dev ninja-build
+      - run: cmake -S native -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build -j2
+      - run: ctest --test-dir build --output-on-failure -j2
