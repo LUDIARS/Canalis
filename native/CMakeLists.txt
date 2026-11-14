@@ -53,9 +53,34 @@ lorica_harden_target(canalis_core)
 file(GLOB_RECURSE CANALIS_CRAWL_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/canalis/crawl/*.cpp)
 add_library(canalis_crawl STATIC ${CANALIS_CRAWL_SOURCES})
 add_library(canalis::crawl ALIAS canalis_crawl)
-target_link_libraries(canalis_crawl PUBLIC canalis_core canalis_infra)
+target_link_libraries(canalis_crawl PUBLIC canalis_core canalis_infra canalis_config)
 canalis_target_warnings(canalis_crawl)
 lorica_harden_target(canalis_crawl)
+
+# save: ③Save の raw sink (JSONL)。ほかの sink は段階 5。
+file(GLOB CANALIS_SAVE_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/canalis/save/*.cpp)
+add_library(canalis_save STATIC ${CANALIS_SAVE_SOURCES})
+add_library(canalis::save ALIAS canalis_save)
+target_link_libraries(canalis_save PUBLIC canalis_core)
+canalis_target_warnings(canalis_save)
+lorica_harden_target(canalis_save)
+
+# cli: 実行ファイル canalis (src/cli.ts の移植)。コマンドはテストから呼べるようにライブラリにする。
+add_library(canalis_cli STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/commands.cpp)
+target_link_libraries(canalis_cli PUBLIC canalis_crawl canalis_save canalis_config)
+canalis_target_warnings(canalis_cli)
+lorica_harden_target(canalis_cli)
+
+add_executable(canalis ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/main.cpp)
+target_link_libraries(canalis PRIVATE canalis_cli)
+if(WIN32)
+  target_link_libraries(canalis PRIVATE shell32)
+endif()
+canalis_target_warnings(canalis)
+lorica_harden_target(canalis)
+set_target_properties(canalis PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin" RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin")
+install(TARGETS canalis RUNTIME DESTINATION bin)
 
 if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
   add_subdirectory(tests)

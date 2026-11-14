@@ -6,7 +6,7 @@ TS 版 (`src/`) を C++20 に移したもの。設計と段階は `spec/plan/cpp
 - 書き方の規約: Discutere native の `native/docs/PORTING.md` に従う (名前空間は `canalis::<ディレクトリ>`、include は `canalis/<ディレクトリ>/<名前>.hpp`)
 - 段階ごとの対応表・挙動の差: `native/docs/port-notes/*.md`
 
-## 今あるもの (段階 1・2)
+## 今あるもの (段階 1〜3)
 
 | ターゲット | 中身 |
 |---|---|
@@ -14,7 +14,9 @@ TS 版 (`src/`) を C++20 に移したもの。設計と段階は `spec/plan/cpp
 | `canalis::infra` | 外部への HTTP/HTTPS クライアント (期限・応答の上限・SSRF 対策)、導入済みの Edge / Chrome を CDP pipe で動かす Browser / Page |
 | `canalis::config` | 暗号化 config (`config.json`、TS 版と同じ形式) |
 | `canalis::core` | 受け渡しの契約 (RawRecord・Source) |
-| `canalis::crawl` | ①Crawl adapter: website・notion-public (`NotionPublicSource`・`crawl_public_pages`) |
+| `canalis::crawl` | ①Crawl adapter: website・notion-public (`NotionPublicSource`・`crawl_public_pages`)・notion (公式 API: `NotionSource`・`crawl_database`・`crawl_page`・URL の変換) |
+| `canalis::save` | ③Save の raw sink (`JsonlRawSink`・読み戻し) |
+| 実行ファイル `canalis` | `notion-crawl`・`config` (TS 版と同じ) と `crawl`・`notion-public-crawl`・`website-parse` (C++ 版で追加)。引数は `spec/interface/cli.md` |
 
 notion-public は導入済みの Edge / Chrome を使う (Chromium はダウンロードしない)。別のブラウザを使うときは env `CANALIS_BROWSER` に実行ファイルのパスを入れる。
 

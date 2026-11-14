@@ -14,13 +14,14 @@ foreach(source ${CANALIS_TEST_SOURCES})
   endif()
   string(REPLACE "." "_" target_name "canalis_test_${test_name}")
   add_executable(${target_name} ${source})
+  add_dependencies(${target_name} canalis)  # CLI のテストが実行ファイルを起動する
   target_include_directories(${target_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
   # テストは Beast で偽のサーバを立てることがあるので canalis_boost も使える。
-  target_link_libraries(${target_name} PRIVATE canalis_crawl canalis_config canalis_boost)
+  target_link_libraries(${target_name} PRIVATE canalis_cli canalis_boost)
   canalis_target_warnings(${target_name})
   lorica_harden_target(${target_name})
   add_test(NAME ${test_name} COMMAND ${target_name})
   set_tests_properties(${test_name} PROPERTIES
-    ENVIRONMENT "CI_TEST_FIXTURES=${CMAKE_CURRENT_SOURCE_DIR}/fixtures;CI_REPO_ROOT=${PROJECT_SOURCE_DIR}/.."
+    ENVIRONMENT "CI_TEST_FIXTURES=${CMAKE_CURRENT_SOURCE_DIR}/fixtures;CI_REPO_ROOT=${PROJECT_SOURCE_DIR}/..;CI_CANALIS_EXE=$<TARGET_FILE:canalis>"
     TIMEOUT 120)
 endforeach()

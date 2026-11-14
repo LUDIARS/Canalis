@@ -241,7 +241,7 @@ std::string encode_unsafe(std::string_view s) {
 }
 
 std::optional<std::string> resolve(std::string_view base, std::string_view ref) {
-    const auto b = parse(base);
+    const auto b = parse(encode_unsafe(base));  // new URL と同じく base の空白・非 ASCII も %XX にする
     if (!b || (b->scheme != "http" && b->scheme != "https")) return std::nullopt;
     const std::string r = encode_unsafe(str::trim(ref));
     if (has_scheme(r)) {
