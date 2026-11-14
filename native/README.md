@@ -36,3 +36,17 @@ Windows (Visual Studio 2022) では `-G "Visual Studio 17 2022" -A x64` と、�
 golden の fixtures は `native/tests/golden/*.gen.mjs` を node で実行して作り直す (Node の組み込みだけを使う)。
 
 本物のブラウザを使う結合テスト (`infra.browser_e2e`) は `CANALIS_BROWSER_E2E=1` のときだけ動く (loopback の偽のページだけを取り、外への通信はプロキシ指定で塞ぐ)。
+
+## 他のプロジェクトから組み込む (add_subdirectory)
+
+Discutere native・Tirocinium native のように C++ のプロジェクトから使うときは、Canalis を submodule にして組み込む。
+
+```cmake
+# 親が同じ名前 (json / boost / lorica) で同じ版を宣言していれば、それが使われる (CanalisDependencies.cmake)。
+# 親が Boost.Beast の分離コンパイルの単位をすでにコンパイルしているなら OFF にする (二重のリンクを避ける)。
+set(CANALIS_COMPILE_BEAST OFF CACHE BOOL "" FORCE)
+add_subdirectory(lib/canalis/native ${CMAKE_BINARY_DIR}/_canalis EXCLUDE_FROM_ALL)
+target_link_libraries(my_app PRIVATE canalis::crawl)   # canalis::core / canalis::save / canalis::runner / canalis::llm も同じ
+```
+
+組み込むときは、ctest のテストと `install` を作らない (Canalis 単独でビルドしたときだけ)。実行ファイル `canalis` は、ターゲットとして指定したときだけビルドされる (`EXCLUDE_FROM_ALL`)。

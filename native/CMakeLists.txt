@@ -24,7 +24,7 @@ lorica_harden_target(canalis_base)
 
 # infra: 外部への HTTP/HTTPS クライアント。Boost.Beast を含む翻訳単位はここだけに閉じ込める (重いので)。
 file(GLOB CANALIS_INFRA_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/canalis/infra/*.cpp)
-add_library(canalis_infra STATIC ${CANALIS_INFRA_SOURCES} ${CMAKE_BINARY_DIR}/generated/beast_src.cpp)
+add_library(canalis_infra STATIC ${CANALIS_INFRA_SOURCES} ${CANALIS_BEAST_SRC})
 add_library(canalis::infra ALIAS canalis_infra)
 target_link_libraries(canalis_infra PUBLIC canalis_base PRIVATE canalis_boost)
 if(WIN32)
@@ -96,7 +96,9 @@ canalis_target_warnings(canalis)
 lorica_harden_target(canalis)
 set_target_properties(canalis PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin" RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin")
-install(TARGETS canalis RUNTIME DESTINATION bin)
+if(PROJECT_IS_TOP_LEVEL)
+  install(TARGETS canalis RUNTIME DESTINATION bin)
+endif()
 
 if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
   add_subdirectory(tests)
