@@ -5,6 +5,10 @@ name: Release bundle
 #   - Release が published になったとき (Revisor の release-publish が作る Release) に自動で添付する
 #   - 既存の Release に後から添付するときは workflow_dispatch で tag を指定する
 # bundle の中身: dist/ package.json package-lock.json README.md BUNDLE.json と本番依存だけの node_modules/。
+# C++ 版 (native/、spec/plan/cpp-port.md D4) の実行ファイルも OS ごとに添付する (job native):
+#   canalis-windows-x64.zip   canalis.exe と、同じフォルダに置く OpenSSL 3 / MSVC ランタイムの DLL、BUILD.json
+#   canalis-linux-x64.tar.gz  canalis (OpenSSL 3 は libssl3 として OS のものを使う)、BUILD.json
+#   それぞれ <asset>.sha256 を添える。利用側 (Consult の setup など) は releases/latest/download/<asset> で取る。
 # Playwright のブラウザ本体 (Chromium) は同梱しない。使う側で
 #   node node_modules/playwright/cli.js install chromium
 # を実行する (notion-public / website のブラウザ描画を使うときだけ要る)。
@@ -69,6 +73,92 @@ jobs:
           set -euo pipefail
           asset="canalis-${TAG}.tar.gz"
           tar -czf "$asset" -C "$STAGE" .
+          sha256sum "$asset" | awk '{print $1}' > "$asset.sha256"
+          ls -l "$asset" "$asset.sha256"
+          echo "ASSET=$asset" >> "$GITHUB_ENV"
+      - name: Upload to the Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" "$ASSET" "$ASSET.sha256" --clobber
+
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            asset: canalis-windows-x64.zip
+          - os: ubuntu-22.04
+            asset: canalis-linux-x64.tar.gz
+    runs-on: ${{ matrix.os }}
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - name: Install build tools (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libssl-dev ninja-build
+      - name: Locate OpenSSL 3 (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          set -euo pipefail
+          root=""
+          for dir in "C:/Program Files/OpenSSL" "C:/Program Files/OpenSSL-Win64"; do
+            if [ -f "$dir/bin/libssl-3-x64.dll" ]; then root="$dir"; break; fi
+          done
+          if [ -z "$root" ]; then
+            choco install openssl -y --no-progress
+            root="C:/Program Files/OpenSSL-Win64"
+          fi
+          test -f "$root/bin/libssl-3-x64.dll"
+          echo "OPENSSL_ROOT=$root" >> "$GITHUB_ENV"
+      - name: Configure
+        run: |
+          set -euo pipefail
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cmake -S native -B build -G "Visual Studio 17 2022" -A x64 -DOPENSSL_ROOT_DIR="$OPENSSL_ROOT"
+          else
+            cmake -S native -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          fi
+      - name: Build
+        run: cmake --build build --config Release --parallel 2
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure -j 2
+      - name: Stage
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/canalis"
+          mkdir -p "$stage"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cp build/bin/canalis.exe "$stage/"
+            # 実行ファイルと同じフォルダに置いて読み込ませる DLL (アプリと一緒に配る形)。
+            for dll in libssl-3-x64.dll libcrypto-3-x64.dll; do
+              cp "$OPENSSL_ROOT/bin/$dll" "$stage/"
+            done
+            for dll in msvcp140.dll msvcp140_atomic_wait.dll vcruntime140.dll vcruntime140_1.dll; do
+              cp "C:/Windows/System32/$dll" "$stage/"
+            done
+          else
+            cp build/bin/canalis "$stage/"
+          fi
+          jq -n --arg tag "$TAG" --arg commit "$GITHUB_SHA" --arg os "$RUNNER_OS" \
+            --arg builtAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{name: "canalis", tag: $tag, commit: $commit, os: $os, builtAt: $builtAt}' > "$stage/BUILD.json"
+          echo "STAGE=$stage" >> "$GITHUB_ENV"
+      - name: Pack
+        run: |
+          set -euo pipefail
+          asset="${{ matrix.asset }}"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            (cd "$STAGE" && 7z a -tzip "$GITHUB_WORKSPACE/$asset" ./*)
+          else
+            tar -czf "$asset" -C "$STAGE" .
+          fi
           sha256sum "$asset" | awk '{print $1}' > "$asset.sha256"
           ls -l "$asset" "$asset.sha256"
           echo "ASSET=$asset" >> "$GITHUB_ENV"
