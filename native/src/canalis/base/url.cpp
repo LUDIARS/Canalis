@@ -15,6 +15,13 @@ std::string Url::origin() const {
     return out;
 }
 
+std::string Url::href() const {
+    std::string out = origin() + path;
+    if (!query.empty()) out += "?" + query;
+    if (!fragment.empty()) out += "#" + fragment;
+    return out;
+}
+
 std::optional<Url> parse(std::string_view text) {
     Url u;
     const auto sep = text.find("://");
@@ -178,6 +185,96 @@ std::string build_query(const std::vector<std::pair<std::string, std::string>>& 
         out += enc(k) + "=" + enc(v);
     }
     return out;
+}
+
+namespace {
+
+/** RFC 3986 5.2.4 remove_dot_segments。 */
+std::string remove_dot_segments(std::string_view path) {
+    std::vector<std::string> out;
+    const auto parts = str::split(path, "/");
+    for (std::size_t i = 0; i < parts.size(); ++i) {
+        const std::string& seg = parts[i];
+        const bool last = i + 1 == parts.size();
+        if (seg == ".") {
+            if (last) out.emplace_back();
+        } else if (seg == "..") {
+            if (out.size() > 1) out.pop_back();
+            if (last) out.emplace_back();
+        } else {
+            out.push_back(seg);
+        }
+    }
+    std::string joined = str::join(out, "/");
+    if (joined.empty() || joined.front() != '/') joined.insert(joined.begin(), '/');
+    return joined;
+}
+
+bool has_scheme(std::string_view ref) {
+    const auto colon = ref.find(':');
+    if (colon == std::string_view::npos || colon == 0) return false;
+    for (std::size_t i = 0; i < colon; ++i) {
+        const char c = ref[i];
+        const bool alpha = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+        if (!(alpha || (i > 0 && ((c >= '0' && c <= '9') || c == '+' || c == '-' || c == '.')))) return false;
+    }
+    return true;
+}
+
+} // namespace
+
+std::string encode_unsafe(std::string_view s) {
+    static constexpr char kHex[] = "0123456789ABCDEF";
+    std::string out;
+    out.reserve(s.size());
+    for (char c : s) {
+        const auto uc = static_cast<unsigned char>(c);
+        if (uc <= 0x20 || uc >= 0x7F || c == '"' || c == '<' || c == '>' || c == '`') {
+            out += '%';
+            out += kHex[uc >> 4];
+            out += kHex[uc & 0x0F];
+        } else {
+            out += c;
+        }
+    }
+    return out;
+}
+
+std::optional<std::string> resolve(std::string_view base, std::string_view ref) {
+    const auto b = parse(base);
+    if (!b || (b->scheme != "http" && b->scheme != "https")) return std::nullopt;
+    const std::string r = encode_unsafe(str::trim(ref));
+    if (has_scheme(r)) {
+        const auto abs = parse(r);
+        if (!abs || (abs->scheme != "http" && abs->scheme != "https")) return std::nullopt;
+        Url u = *abs;
+        u.path = remove_dot_segments(u.path);
+        return u.href();
+    }
+    if (r.rfind("//", 0) == 0) return resolve(base, b->scheme + ":" + r);
+    Url u = *b;
+    std::string_view rest = r;
+    std::string fragment;
+    if (const auto hash = rest.find('#'); hash != std::string_view::npos) {
+        fragment = std::string(rest.substr(hash + 1));
+        rest = rest.substr(0, hash);
+    }
+    std::optional<std::string> query;
+    if (const auto q = rest.find('?'); q != std::string_view::npos) {
+        query = std::string(rest.substr(q + 1));
+        rest = rest.substr(0, q);
+    }
+    if (rest.empty()) {
+        if (query) u.query = *query;  // "?x" はパスを保ち、クエリを替える。"#x" だけならクエリも保つ
+    } else {
+        std::string merged;
+        if (rest.front() == '/') merged = std::string(rest);
+        else merged = u.path.substr(0, u.path.rfind('/') + 1) + std::string(rest);
+        u.path = remove_dot_segments(merged);
+        u.query = query.value_or("");
+    }
+    u.fragment = fragment;
+    return u.href();
 }
 
 } // namespace canalis::url

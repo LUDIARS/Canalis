@@ -21,10 +21,23 @@ struct Url {
     std::string origin() const;
     /** host が IPv6 なら角括弧つき。 */
     std::string host_for_header() const;
+    /** new URL(u).href 相当 (origin + path + "?query" + "#fragment")。 */
+    std::string href() const;
 };
 
 /** 絶対 URL を読む (http/https/ws/wss のみ)。userinfo つき・不正な形は nullopt。 */
 std::optional<Url> parse(std::string_view text);
+
+/**
+ * new URL(ref, base).href 相当 (Canalis 追加)。base は http/https の絶対 URL。
+ * ref が絶対 URL・"//host"・"/path"・"?query"・"#frag"・相対パスのどれでも解決し、"." / ".." を畳む。
+ * 空白・制御文字・非 ASCII のバイトは %XX にする。http/https 以外になる ref (mailto: 等) や壊れた URL は nullopt。
+ * WHATWG URL の完全な実装ではない (ホストの IDNA 変換・バックスラッシュの扱いはしない)。
+ */
+std::optional<std::string> resolve(std::string_view base, std::string_view ref);
+
+/** 空白・制御文字・非 ASCII・URL に生で置けない記号 (" < > `) を %XX にする。既にある %XX はそのまま (Canalis 追加)。 */
+std::string encode_unsafe(std::string_view s);
 
 /** encodeURIComponent。 */
 std::string encode_component(std::string_view s);

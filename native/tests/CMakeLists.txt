@@ -16,7 +16,7 @@ foreach(source ${CANALIS_TEST_SOURCES})
   add_executable(${target_name} ${source})
   target_include_directories(${target_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
   # テストは Beast で偽のサーバを立てることがあるので canalis_boost も使える。
-  target_link_libraries(${target_name} PRIVATE canalis_infra canalis_config canalis_boost)
+  target_link_libraries(${target_name} PRIVATE canalis_crawl canalis_config canalis_boost)
   canalis_target_warnings(${target_name})
   lorica_harden_target(${target_name})
   add_test(NAME ${test_name} COMMAND ${target_name})

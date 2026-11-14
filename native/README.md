@@ -6,13 +6,17 @@ TS 版 (`src/`) を C++20 に移したもの。設計と段階は `spec/plan/cpp
 - 書き方の規約: Discutere native の `native/docs/PORTING.md` に従う (名前空間は `canalis::<ディレクトリ>`、include は `canalis/<ディレクトリ>/<名前>.hpp`)
 - 段階ごとの対応表・挙動の差: `native/docs/port-notes/*.md`
 
-## 今あるもの (段階 1)
+## 今あるもの (段階 1・2)
 
 | ターゲット | 中身 |
 |---|---|
-| `canalis::base` | JSON (上限つき)・文字列・時刻・ログ・環境変数・ファイル・URL・子プロセス・暗号の基本 |
-| `canalis::infra` | 外部への HTTP/HTTPS クライアント (期限・応答の上限・SSRF 対策) |
+| `canalis::base` | JSON (上限つき)・文字列・時刻・ログ・環境変数・ファイル・URL (相対 URL の解決を含む)・子プロセス・暗号の基本 |
+| `canalis::infra` | 外部への HTTP/HTTPS クライアント (期限・応答の上限・SSRF 対策)、導入済みの Edge / Chrome を CDP pipe で動かす Browser / Page |
 | `canalis::config` | 暗号化 config (`config.json`、TS 版と同じ形式) |
+| `canalis::core` | 受け渡しの契約 (RawRecord・Source) |
+| `canalis::crawl` | ①Crawl adapter: website・notion-public (`NotionPublicSource`・`crawl_public_pages`) |
+
+notion-public は導入済みの Edge / Chrome を使う (Chromium はダウンロードしない)。別のブラウザを使うときは env `CANALIS_BROWSER` に実行ファイルのパスを入れる。
 
 ## ビルドとテスト
 
@@ -25,4 +29,6 @@ ctest --test-dir build --output-on-failure -j2
 Windows (Visual Studio 2022) では `-G "Visual Studio 17 2022" -A x64` と、必要なら `-DOPENSSL_ROOT_DIR=<OpenSSL の場所>` を渡す。
 取得済みの依存を使うときは `-DFETCHCONTENT_SOURCE_DIR_BOOST=<boost-1.87.0>`・`-DFETCHCONTENT_SOURCE_DIR_JSON=<json>`・`-DLORICA_SOURCE_DIR=<Lorica の clone>` を渡す (`-DFETCHCONTENT_FULLY_DISCONNECTED=ON` で通信しない)。
 
-golden の fixtures は `node native/tests/golden/config_crypto.gen.mjs` で作り直す (Node の組み込みだけを使う)。
+golden の fixtures は `native/tests/golden/*.gen.mjs` を node で実行して作り直す (Node の組み込みだけを使う)。
+
+本物のブラウザを使う結合テスト (`infra.browser_e2e`) は `CANALIS_BROWSER_E2E=1` のときだけ動く (loopback の偽のページだけを取り、外への通信はプロキシ指定で塞ぐ)。

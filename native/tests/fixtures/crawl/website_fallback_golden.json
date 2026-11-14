@@ -1,0 +1,56 @@
+{
+  "generator": "native/tests/golden/website_fallback.gen.mjs",
+  "cases": [
+    {
+      "name": "stub",
+      "url": "https://example.com/",
+      "html": "<!DOCTYPE html>\n<html>\n<head><title>Test Page &amp; More</title></head>\n<body>\n<p>Hello <strong>world</strong>!</p>\n<a href=\"/about\">About</a>\n<a href=\"https://external.com/page\">External</a>\n<script>alert('skip me')</script>\n</body>\n</html>",
+      "expected": {
+        "title": "Test Page & More",
+        "text": "Test Page & More Hello world ! About External",
+        "links": [
+          "https://example.com/about"
+        ],
+        "sourceId": "example.com/"
+      }
+    },
+    {
+      "name": "mixed-case-tags-and-entities",
+      "url": "https://example.com/docs/guide/index.html",
+      "html": "<HTML><HEAD><TITLE lang=\"ja\">  ガイド &lt;入門&gt; &amp;amp;  </TITLE><STYLE>p{color:red}</STYLE></HEAD><BODY>\t<P>一行目&nbsp;&nbsp;です</P>\n\n\n<p>a &quot;b&quot; &#39;c&#39;</p><A HREF=\"../intro\">intro</A><a href=\"sub/page?x=1#h\">sub</a><a href=\"#top\">top</a><a href=\"/about\">dup</a><a href=\"/about\">dup2</a><a href=\"mailto:x@example.com\">mail</a><a data-href=\"/data\">data</a><a href=\"\">empty</a><SCRIPT type=\"text/javascript\">var s = \"<p>no</p>\";</SCRIPT>終わり 1 < 2 > 0 <> end</BODY></HTML>",
+      "expected": {
+        "title": "ガイド <入門> &amp;",
+        "text": "ガイド <入門> &amp; 一行目  です a \"b\" 'c' intro sub top dup dup2 mail data empty 終わり 1 0 <> end",
+        "links": [
+          "https://example.com/docs/intro",
+          "https://example.com/docs/guide/sub/page?x=1#h",
+          "https://example.com/docs/guide/index.html#top",
+          "https://example.com/about",
+          "https://example.com/data"
+        ],
+        "sourceId": "example.com/docs/guide/index.html"
+      }
+    },
+    {
+      "name": "no-title-unclosed-script",
+      "url": "https://example.com:8443/a b/日本",
+      "html": "<p>before</p><script>never closed <p>still text</p>",
+      "expected": {
+        "text": "before never closed still text",
+        "links": [],
+        "sourceId": "example.com/a_20b/_E6_97_A5_E6_9C_AC"
+      }
+    },
+    {
+      "name": "unicode-whitespace",
+      "url": "https://example.com/",
+      "html": "<title>x</title><p>a　　b c\r\n\r\nd</p>",
+      "expected": {
+        "title": "x",
+        "text": "x a b c d",
+        "links": [],
+        "sourceId": "example.com/"
+      }
+    }
+  ]
+}

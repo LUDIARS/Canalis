@@ -41,6 +41,22 @@ target_link_libraries(canalis_config PUBLIC canalis_base)
 canalis_target_warnings(canalis_config)
 lorica_harden_target(canalis_config)
 
+# core: 受け渡しの契約 (RawRecord・Source)。
+file(GLOB CANALIS_CORE_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/canalis/core/*.cpp)
+add_library(canalis_core STATIC ${CANALIS_CORE_SOURCES})
+add_library(canalis::core ALIAS canalis_core)
+target_link_libraries(canalis_core PUBLIC canalis_base)
+canalis_target_warnings(canalis_core)
+lorica_harden_target(canalis_core)
+
+# crawl: ①Crawl adapter (src/crawl の移植)。
+file(GLOB_RECURSE CANALIS_CRAWL_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/canalis/crawl/*.cpp)
+add_library(canalis_crawl STATIC ${CANALIS_CRAWL_SOURCES})
+add_library(canalis::crawl ALIAS canalis_crawl)
+target_link_libraries(canalis_crawl PUBLIC canalis_core canalis_infra)
+canalis_target_warnings(canalis_crawl)
+lorica_harden_target(canalis_crawl)
+
 if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
   add_subdirectory(tests)
 endif()
