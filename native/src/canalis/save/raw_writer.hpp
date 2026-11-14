@@ -1,10 +1,11 @@
 #pragma once
 // ③Save の raw sink: ①の出力 RawRecord を 1 行 1 件の JSONL で verbatim 保存する (src/save/raw-writer.ts の移植)。
-// 読み戻し (replay の起点) も持つ。段階 3 では CLI の notion-crawl が使う分を先に移す (ほかの sink は段階 5)。
+// 読み戻し (replay の起点) も持つ。
 #include <optional>
 #include <string>
 #include <vector>
 
+#include "canalis/core/pipeline.hpp"
 #include "canalis/core/raw_record.hpp"
 
 namespace canalis::save {
@@ -16,11 +17,14 @@ struct JsonlRawSinkConfig {
     std::optional<std::string> stamp;
 };
 
-class JsonlRawSink {
+class JsonlRawSink final : public core::Sink {
 public:
     explicit JsonlRawSink(JsonlRawSinkConfig config);
+    std::string_view name() const override { return "jsonl"; }
+    std::string_view accepts() const override { return core::kKindRaw; }
     /** <dir>/<stamp>.jsonl に書く (親ディレクトリは作る)。書いたファイルのパスを返す。失敗は std::runtime_error。 */
     std::string write(const std::vector<core::RawRecord>& records) const;
+    void write_raw(const std::vector<core::RawRecord>& records) override { write(records); }
 
 private:
     JsonlRawSinkConfig config_;

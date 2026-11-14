@@ -6,16 +6,18 @@ TS 版 (`src/`) を C++20 に移したもの。設計と段階は `spec/plan/cpp
 - 書き方の規約: Discutere native の `native/docs/PORTING.md` に従う (名前空間は `canalis::<ディレクトリ>`、include は `canalis/<ディレクトリ>/<名前>.hpp`)
 - 段階ごとの対応表・挙動の差: `native/docs/port-notes/*.md`
 
-## 今あるもの (段階 1〜4)
+## 今あるもの (段階 1〜5)
 
 | ターゲット | 中身 |
 |---|---|
 | `canalis::base` | JSON (上限つき)・文字列・時刻・ログ・環境変数・ファイル・URL (相対 URL の解決を含む)・子プロセス・暗号の基本 |
 | `canalis::infra` | 外部への HTTP/HTTPS クライアント (期限・応答の上限・SSRF 対策)、導入済みの Edge / Chrome を CDP pipe で動かす Browser / Page |
 | `canalis::config` | 暗号化 config (`config.json`、TS 版と同じ形式) |
-| `canalis::core` | 受け渡しの契約 (RawRecord・Source) |
+| `canalis::core` | 受け渡しの契約 (RawRecord・Source・Transform・Sink・エンベロープ)、manifest (JSON) |
+| `canalis::runner` | manifest を解釈して crawl → raw 保存 → transform → save を動かす `run_pipeline` |
 | `canalis::crawl` | ①Crawl adapter: website・notion-public (`NotionPublicSource`・`crawl_public_pages`)・notion (公式 API: `NotionSource`・`crawl_database`・`crawl_page`・URL の変換)・youtube・reddit・discord (チャンネル / ギルド)・steam (新作一覧 / アプリ別レビュー / ユーザ別レビュー) |
-| `canalis::save` | ③Save の raw sink (`JsonlRawSink`・読み戻し) |
+| `canalis::save` | ③Save の writer: raw JSONL (`JsonlRawSink`・読み戻し)・Postgres・Kuzu (実行関数を注入)・FT (データセット + runner) |
+| `canalis::llm` | opt-in のローカル LLM (OpenAI 互換)・推論カスケード・辞書のスコアラ。core / crawl / save からは使わない |
 | 実行ファイル `canalis` | `notion-crawl`・`config` (TS 版と同じ) と `crawl`・`notion-public-crawl`・`website-parse` (C++ 版で追加)。引数は `spec/interface/cli.md` |
 
 notion-public は導入済みの Edge / Chrome を使う (Chromium はダウンロードしない)。別のブラウザを使うときは env `CANALIS_BROWSER` に実行ファイルのパスを入れる。

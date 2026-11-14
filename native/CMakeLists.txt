@@ -57,13 +57,29 @@ target_link_libraries(canalis_crawl PUBLIC canalis_core canalis_infra canalis_co
 canalis_target_warnings(canalis_crawl)
 lorica_harden_target(canalis_crawl)
 
-# save: ③Save の raw sink (JSONL)。ほかの sink は段階 5。
+# save: ③Save の writer (raw JSONL・Postgres・Kuzu・FT)。DB ドライバは持たず、実行関数を注入する。
 file(GLOB CANALIS_SAVE_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/canalis/save/*.cpp)
 add_library(canalis_save STATIC ${CANALIS_SAVE_SOURCES})
 add_library(canalis::save ALIAS canalis_save)
 target_link_libraries(canalis_save PUBLIC canalis_core)
 canalis_target_warnings(canalis_save)
 lorica_harden_target(canalis_save)
+
+# runner: manifest を解釈して 3 ステージを動かす (src/runner の移植)。
+file(GLOB CANALIS_RUNNER_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/canalis/runner/*.cpp)
+add_library(canalis_runner STATIC ${CANALIS_RUNNER_SOURCES})
+add_library(canalis::runner ALIAS canalis_runner)
+target_link_libraries(canalis_runner PUBLIC canalis_core)
+canalis_target_warnings(canalis_runner)
+lorica_harden_target(canalis_runner)
+
+# llm: opt-in のローカル LLM と推論カスケード (src/llm の移植)。core / crawl / save からは使わない (② が明示してリンクする)。
+file(GLOB CANALIS_LLM_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/canalis/llm/*.cpp)
+add_library(canalis_llm STATIC ${CANALIS_LLM_SOURCES})
+add_library(canalis::llm ALIAS canalis_llm)
+target_link_libraries(canalis_llm PUBLIC canalis_infra)
+canalis_target_warnings(canalis_llm)
+lorica_harden_target(canalis_llm)
 
 # cli: 実行ファイル canalis (src/cli.ts の移植)。コマンドはテストから呼べるようにライブラリにする。
 add_library(canalis_cli STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/commands.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/adapters.cpp)
