@@ -9,7 +9,7 @@ C++ 版 (移行中、spec/plan/cpp-port.md): `native/` をビルドした `build
 ```
 canalis notion-crawl <databaseId> [--out <dir>] [--max-depth N] [--max-pages N]
 canalis config <subcommand> ...
-canalis crawl <website|notion-public|notion> --config <JSON | @file>            (C++ 版のみ)
+canalis crawl <adapter> --config <JSON | @file>            (C++ 版のみ)
 canalis notion-public-crawl <url> [--max-depth N] [--max-pages N] [--timeout ms] [--scroll-delay ms] [--max-scrolls N]  (C++ 版のみ)
 canalis website-parse --url <url>   (HTML は標準入力、C++ 版のみ)
 ```
@@ -23,7 +23,7 @@ TS / Node の利用者が実行ファイルを子プロセスで呼ぶための�
 
 | コマンド | 標準出力 | exit |
 |---|---|---|
-| `crawl <adapter> --config <JSON \| @file>` | `RawRecord` を 1 行 1 件の JSON。config は adapter の TS の Config と同じキー (website: `url` / `userAgent` / `timeoutMs`、notion-public: `url` / `options{timeout, scrollDelay, maxScrolls}`、notion: `databaseId` / `token` / `crawl{maxDepth, maxPages, includeChildDatabases}`) | 0 成功 / 2 引数の誤り・未知の adapter / 1 取得の失敗 (`canalis: <message>`) |
+| `crawl <adapter> --config <JSON \| @file>` | `RawRecord` を 1 行 1 件の JSON。config は adapter の TS の Config と同じキー (website: `url` / `userAgent` / `timeoutMs`、notion-public: `url` / `options{timeout, scrollDelay, maxScrolls}`、notion: `databaseId` / `token` / `crawl{maxDepth, maxPages, includeChildDatabases}`)。adapter は website・notion-public・notion・youtube (`videoId` / `apiKey` / `maxResults` / `textFormat`)・reddit (`subreddit` / `postId` / `subredditForPost` / `limit` / `sort` / `mode`)・discord (`channelId` / `token` / `guildId` / `options`)・discord-guild (`guildId` / `token` / `channelTypes` / `excludeChannelIds` / `options`)・steam-new-releases (`maxApps` / `countryCode` / `language`)・steam-app-reviews (`appId` / `languages` / `filter` / `maxReviews` / `stopAtRecommendationId`)・steam-user-reviews (`steamId` / `maxPages` / `language`)。Steam は共通で `politeDelayMs` | 0 成功 / 2 引数の誤り・未知の adapter / 1 取得の失敗 (`canalis: <message>`) |
 | `notion-public-crawl <url> ...` | `crawlPublicPages` の結果 (`rootUrl` / `pages` / `errors` / `truncated`) を 1 行の JSON | 0 (ページごとの失敗は `errors`) / 2 引数の誤り |
 | `website-parse --url <url>` | 標準入力の HTML を fallback パーサで解析した `{title?, text, links}` を 1 行の JSON (取得はしない。利用者が自分の取得規則で取った HTML を渡す) | 0 / 2 引数の誤り / 1 入力が 64 MiB を超えた |
 

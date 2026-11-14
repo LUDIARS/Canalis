@@ -1,0 +1,104 @@
+{
+  "generator": "native/tests/golden/steam_parse.gen.mjs",
+  "steamId": "76561198000000001",
+  "search": [
+    {
+      "name": "ts-fixture",
+      "html": "\n<a href=\"https://store.steampowered.com/app/111/GameA/?snr=x\" data-ds-appid=\"111\" data-ds-itemkey=\"App_111\">\n  <span class=\"title\">Game A &amp; Knights</span>\n  <div class=\"col search_released responsive_secondrow\">2026 年 8 月 10 日</div>\n</a>\n<a href=\"https://store.steampowered.com/app/222/GameB/?snr=x\" data-ds-appid=\"222\" data-ds-itemkey=\"App_222\">\n  <span class=\"title\">Game B</span>\n  <div class=\"col search_released responsive_secondrow\"></div>\n</a>",
+      "expected": [
+        {
+          "appId": 111,
+          "title": "Game A & Knights",
+          "url": "https://store.steampowered.com/app/111/",
+          "releaseText": "2026 年 8 月 10 日"
+        },
+        {
+          "appId": 222,
+          "title": "Game B",
+          "url": "https://store.steampowered.com/app/222/"
+        }
+      ]
+    },
+    {
+      "name": "edge-cases",
+      "html": "<a data-ds-appid=\"1,2\"><span class=\"title\"><b>Bundle</b>  Pack</span></a><a\tclass=\"x\" data-ds-appid=\"9\" data-ds-appid=\"333\"><span class=\"title\">Last attr wins</span><div class=\"col search_released x\" id=\"y\">bad</div><div class=\"col search_released\">  2026-01-01 </div></a><a data-ds-appid=\"abc\"><span class=\"title\">No digits</span></a><a data-ds-appid=\"444\"><span class=\"title\">No close<adata-ds-appid=\"555\"><span class=\"title\">No space</span></a><a data-ds-appid=\"666\">",
+      "expected": [
+        {
+          "appId": 1,
+          "title": "Bundle Pack",
+          "url": "https://store.steampowered.com/app/1/"
+        },
+        {
+          "appId": 333,
+          "title": "Last attr wins",
+          "url": "https://store.steampowered.com/app/333/",
+          "releaseText": "2026-01-01"
+        },
+        {
+          "appId": 444,
+          "title": "No close No space",
+          "url": "https://store.steampowered.com/app/444/"
+        }
+      ]
+    }
+  ],
+  "user": [
+    {
+      "name": "ts-fixture",
+      "html": "\n<div class=\"review_box \">\n  <div class=\"leftcol\">\n    <a href=\"https://steamcommunity.com/profiles/76561198000000001/recommended/111/\"></a>\n  </div>\n  <div class=\"title\"><a href=\"https://steamcommunity.com/profiles/76561198000000001/recommended/111/\">Recommended</a></div>\n  <div class=\"hours\">4.9 hrs on record</div>\n  <div class=\"content\">\n    Great <b>game</b>!<br>Line two &amp; done.\n    <div class=\"spoiler\">hidden bit</div>\n  </div>\n  <div class=\"posted\">Posted 11 August.</div>\n</div>\n<div class=\"review_box \">\n  <div class=\"title\"><a href=\"https://steamcommunity.com/profiles/76561198000000001/recommended/222/\">Not Recommended</a></div>\n  <div class=\"hours\">0.4 hrs on record</div>\n  <div class=\"content\">Refunded.</div>\n  <div class=\"posted\">Posted 12 August.</div>\n</div>",
+      "expected": [
+        {
+          "steamId": "76561198000000001",
+          "appId": 111,
+          "recommended": true,
+          "text": "Great game!\nLine two & done.\n hidden bit",
+          "hoursText": "4.9 hrs on record",
+          "postedText": "Posted 11 August.",
+          "url": "https://steamcommunity.com/profiles/76561198000000001/recommended/111/"
+        },
+        {
+          "steamId": "76561198000000001",
+          "appId": 222,
+          "recommended": false,
+          "text": "Refunded.",
+          "hoursText": "0.4 hrs on record",
+          "postedText": "Posted 12 August.",
+          "url": "https://steamcommunity.com/profiles/76561198000000001/recommended/222/"
+        }
+      ]
+    },
+    {
+      "name": "ts-fixture-2026-10",
+      "html": "\n<div data-panel=\"{&quot;flow-children&quot;:&quot;row&quot;}\" class=\"review_box\">\n  <div class=\"review_box_content\">\n    <div class=\"leftcol\"><a href=\"https://steamcommunity.com/app/333/\"></a></div>\n    <div class=\"rightcol\">\n      <div class=\"vote_header\">\n        <div class=\"title\"><a href=\"https://steamcommunity.com/profiles/76561198000000001/recommended/333/\">Recommended</a></div>\n        <div class=\"hours\">12.0 hrs on record</div>\n      </div>\n      <div class=\"content \">Still fun.<br>Two lines.</div>\n      <div class=\"reviewer_hardware_container\"><div class=\"reviewer_hardware\">Steam Deck</div></div>\n      <div class=\"posted\">Posted 3 October.</div>\n    </div>\n  </div>\n</div>",
+      "expected": [
+        {
+          "steamId": "76561198000000001",
+          "appId": 333,
+          "recommended": true,
+          "text": "Still fun.\nTwo lines.",
+          "hoursText": "12.0 hrs on record",
+          "postedText": "Posted 3 October.",
+          "url": "https://steamcommunity.com/profiles/76561198000000001/recommended/333/"
+        }
+      ]
+    },
+    {
+      "name": "edge-cases",
+      "html": "<divx class=\"review_box \">ignored</divx><div id=\"a\" class=\"review_box\"><a href=\"/recommended/x/\"></a><a href=\"/recommended/77/\"></a><div class=\"title\">Something else</div><div class=\"hours\"></div><div class=\"contentx\">no</div><div class=\"content extra\" data-x=\"1\">Line<BR/>A\t\tB<br >\n\n\n\nC &lt;d&gt;<div class=\"received_compensation\">paid</div></div><div class=\"review_box_content\"><a href=\"/recommended/88/\"></a></div><div class=\"review_box\"><a href=\"/recommended/99/\"></a><div class=\"title\">Not Recommended</div></div><div class=\"review_box\"><a href=\"/recommended/100/\"></a><div class=\"content\">no end marker <b>bold</b>",
+      "expected": [
+        {
+          "steamId": "76561198000000001",
+          "appId": 77,
+          "text": "Line\nA B\n\nC <d>",
+          "url": "https://steamcommunity.com/profiles/76561198000000001/recommended/77/"
+        },
+        {
+          "steamId": "76561198000000001",
+          "appId": 100,
+          "text": "no end marker bold",
+          "url": "https://steamcommunity.com/profiles/76561198000000001/recommended/100/"
+        }
+      ]
+    }
+  ]
+}

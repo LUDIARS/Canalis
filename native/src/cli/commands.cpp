@@ -11,6 +11,7 @@
 #include "canalis/crawl/notion_public/source.hpp"
 #include "canalis/crawl/website/source.hpp"
 #include "canalis/save/raw_writer.hpp"
+#include "cli/adapters.hpp"
 
 namespace canalis::cli {
 namespace {
@@ -61,11 +62,6 @@ Json read_config_arg(const std::string& value) {
     return *json;
 }
 
-std::optional<std::int64_t> opt_int(const Json& obj, std::string_view key) {
-    const auto n = json_opt_number(obj, key);
-    if (!n || !std::isfinite(*n)) return std::nullopt;
-    return static_cast<std::int64_t>(*n);
-}
 
 void write_records(const Io& io, const std::vector<core::RawRecord>& records) {
     for (const auto& r : records) io.out(json_stringify(core::to_json(r)) + "\n");
@@ -200,40 +196,10 @@ int config_command(const std::vector<std::string>& args, const Io& io) {
 
 namespace {
 
-constexpr std::string_view kCrawlUsage = "usage: canalis crawl <website|notion-public|notion> --config <JSON | @file>\n";
-
-std::vector<core::RawRecord> crawl_website(const Json& c) {
-    crawl::website::WebsiteSourceConfig config;
-    config.url = json_string(c, "url");
-    config.user_agent = json_opt_string(c, "userAgent");
-    config.timeout_ms = opt_int(c, "timeoutMs");
-    return crawl::website::WebsiteSource().crawl(config);
-}
-
-crawl::notion_public::NotionPublicCrawlOptions public_options(const Json& o) {
-    crawl::notion_public::NotionPublicCrawlOptions out;
-    out.timeout = opt_int(o, "timeout");
-    out.scroll_delay = opt_int(o, "scrollDelay");
-    if (auto n = opt_int(o, "maxScrolls")) out.max_scrolls = static_cast<int>(*n);
-    return out;
-}
-
-std::vector<core::RawRecord> crawl_notion_public(const Json& c) {
-    crawl::notion_public::NotionPublicSourceConfig config;
-    config.url = json_string(c, "url");
-    config.options = public_options(json_object(c, "options"));
-    return crawl::notion_public::NotionPublicSource().crawl(config);
-}
-
-std::vector<core::RawRecord> crawl_notion(const Json& c) {
-    crawl::notion::NotionSourceConfig config;
-    config.database_id = json_string(c, "databaseId");
-    config.token = json_opt_string(c, "token");
-    const Json& o = json_object(c, "crawl");
-    if (auto n = opt_int(o, "maxDepth")) config.crawl.max_depth = static_cast<int>(*n);
-    if (auto n = opt_int(o, "maxPages")) config.crawl.max_pages = static_cast<int>(*n);
-    config.crawl.include_child_databases = json_opt_bool(o, "includeChildDatabases");
-    return crawl::notion::NotionSource().crawl(config);
+std::string crawl_usage() {
+    std::vector<std::string> names;
+    for (const auto n : adapter_names()) names.emplace_back(n);
+    return "usage: canalis crawl <adapter> --config <JSON | @file>\n  adapter: " + str::join(names, " | ") + "\n";
 }
 
 } // namespace
@@ -246,17 +212,16 @@ int crawl_command(const std::vector<std::string>& args, const Io& io) {
         else if (!str::starts_with(args[i], "--") && !adapter) adapter = args[i];
     }
     if (!adapter || !config_value) {
-        io.err(std::string(kCrawlUsage));
+        io.err(crawl_usage());
         return 2;
     }
     const Json config = read_config_arg(*config_value);
-    if (*adapter == "website") write_records(io, crawl_website(config));
-    else if (*adapter == "notion-public") write_records(io, crawl_notion_public(config));
-    else if (*adapter == "notion") write_records(io, crawl_notion(config));
-    else {
-        io.err("error: unknown adapter: " + *adapter + "\n" + std::string(kCrawlUsage));
+    const auto records = crawl_adapter(*adapter, config);
+    if (!records) {
+        io.err("error: unknown adapter: " + *adapter + "\n" + crawl_usage());
         return 2;
     }
+    write_records(io, *records);
     return 0;
 }
 

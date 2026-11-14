@@ -66,7 +66,7 @@ canalis_target_warnings(canalis_save)
 lorica_harden_target(canalis_save)
 
 # cli: 実行ファイル canalis (src/cli.ts の移植)。コマンドはテストから呼べるようにライブラリにする。
-add_library(canalis_cli STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/commands.cpp)
+add_library(canalis_cli STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/commands.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/adapters.cpp)
 target_link_libraries(canalis_cli PUBLIC canalis_crawl canalis_save canalis_config)
 canalis_target_warnings(canalis_cli)
 lorica_harden_target(canalis_cli)

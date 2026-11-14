@@ -266,6 +266,94 @@
       ]
     },
     {
+      "file": "native/src/canalis/crawl/discord/client.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
+      "file": "native/src/canalis/crawl/discord/crawl.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
+      "file": "native/src/canalis/crawl/discord/source.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
+      "file": "native/src/canalis/crawl/html_text.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
       "file": "native/src/canalis/crawl/notion/blocks.cpp",
       "standard": "c++20",
       "includes": [
@@ -464,7 +552,183 @@
       ]
     },
     {
+      "file": "native/src/canalis/crawl/reddit/source.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
+      "file": "native/src/canalis/crawl/steam/app_reviews.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
+      "file": "native/src/canalis/crawl/steam/http.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
+      "file": "native/src/canalis/crawl/steam/new_releases.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
+      "file": "native/src/canalis/crawl/steam/source.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
+      "file": "native/src/canalis/crawl/steam/types.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
+      "file": "native/src/canalis/crawl/steam/user_reviews.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
       "file": "native/src/canalis/crawl/website/source.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
+      "file": "native/src/canalis/crawl/youtube/source.cpp",
       "standard": "c++20",
       "includes": [
         "native/src"
@@ -663,6 +927,28 @@
     },
     {
       "file": "native/src/canalis/save/raw_writer.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
+      "file": "native/src/cli/adapters.cpp",
       "standard": "c++20",
       "includes": [
         "native/src"
@@ -912,6 +1198,29 @@
       ]
     },
     {
+      "file": "native/tests/crawl/discord_tests.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src",
+        "native/tests"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
       "file": "native/tests/crawl/notion_public_tests.cpp",
       "standard": "c++20",
       "includes": [
@@ -936,6 +1245,52 @@
     },
     {
       "file": "native/tests/crawl/notion_tests.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src",
+        "native/tests"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
+      "file": "native/tests/crawl/reddit_youtube_tests.cpp",
+      "standard": "c++20",
+      "includes": [
+        "native/src",
+        "native/tests"
+      ],
+      "defines": [
+        "WIN32_LEAN_AND_MEAN",
+        "NOMINMAX",
+        "_WIN32_WINNT=0x0A00",
+        "BOOST_ERROR_CODE_HEADER_ONLY",
+        "BOOST_ASIO_NO_DEPRECATED",
+        "BOOST_BEAST_USE_STD_STRING_VIEW",
+        "BOOST_BEAST_SEPARATE_COMPILATION"
+      ],
+      "packages": [
+        "odeum-json-3-11-3",
+        "odeum-boost-1-87-0",
+        "odeum-openssl-3",
+        "discutere-lorica-cab4f120"
+      ]
+    },
+    {
+      "file": "native/tests/crawl/steam_tests.cpp",
       "standard": "c++20",
       "includes": [
         "native/src",

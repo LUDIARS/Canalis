@@ -1,6 +1,6 @@
 {
   "name": "native-runtime",
-  "description": "C++ 版の Canalis (native/)。 TS 版 (src/) を C++20 へ移す。 土台 (JSON・文字列・時刻・ログ・環境・ファイル・URL・子プロセス・暗号)、 外部への HTTP クライアント、 CDP pipe のブラウザ操作、 暗号化 config、 ①Crawl adapter (website・notion-public・notion)、 raw JSONL sink、 CLI、 CMake と依存の固定、 ctest。 設計は spec/plan/cpp-port.md。",
+  "description": "C++ 版の Canalis (native/)。 TS 版 (src/) を C++20 へ移す。 土台 (JSON・文字列・時刻・ログ・環境・ファイル・URL・子プロセス・暗号)、 外部への HTTP クライアント、 CDP pipe のブラウザ操作、 暗号化 config、 ①Crawl adapter (website・notion-public・notion・youtube・reddit・discord・steam)、 raw JSONL sink、 CLI、 CMake と依存の固定、 ctest。 設計は spec/plan/cpp-port.md。",
   "presetRules": [],
   "templateRules": [],
   "membership": [
@@ -12,6 +12,7 @@
     "plan: Canalis 本体の C++ 化 (spec/plan/cpp-port.md)",
     "段階 1: 土台 (CMake・依存・base・config 互換)",
     "段階 2: notion-public (CDP pipe のブラウザ) と website",
-    "段階 3: notion (公式 API)・raw JSONL sink・CLI (interface: CLI 起動契約)"
+    "段階 3: notion (公式 API)・raw JSONL sink・CLI (interface: CLI 起動契約)",
+    "段階 4: steam・discord・reddit・youtube (feature: ① Crawl ステージ)"
   ]
 }
